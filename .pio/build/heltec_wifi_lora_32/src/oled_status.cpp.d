@@ -143,4 +143,6 @@
  .pio/libdeps/heltec_wifi_lora_32/Adafruit\ BusIO/Adafruit_SPIDevice.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
- .pio/libdeps/heltec_wifi_lora_32/Adafruit\ SSD1306/Adafruit_SSD1306.h
+ .pio/libdeps/heltec_wifi_lora_32/Adafruit\ SSD1306/Adafruit_SSD1306.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h
