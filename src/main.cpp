@@ -1,61 +1,48 @@
-// ULTIMESH Firmware - main.cpp
-// v0.A1 - "Ride the wave!"
-// Baseline with OLED live updates (5-second refresh)
-
 #include <Arduino.h>
-#include <Wire.h>
 #include "oled_status.h"
-#include "lora_handler.h"
+#include "file_storage.h"
 #include "token_codec.h"
+#include "serial_shell.h"
+#include "lora_handler.h"
+#include <FS.h>
 #include <SPIFFS.h>
-
-// === Settings ===
-#define OLED_REFRESH_INTERVAL 5000  // 5 seconds
-
-// === Global Variables ===
-unsigned long lastOLEDUpdate = 0;
 
 void setup() {
   Serial.begin(115200);
   delay(500);
 
-  Serial.println(F("\n🏄 ULTIMESH 🏄 v0.A1 - \"Ride the wave!\""));
-  Serial.println(F("✅ Booting..."));
+  Serial.println("🏄 ULTIMESH 🏄");
+  Serial.println("v0.A1 - \"Ride the wave!\"");
 
   // Initialize SPIFFS
   if (!SPIFFS.begin(true)) {
-    Serial.println(F("❌ SPIFFS Mount Failed"));
+    Serial.println("❌ SPIFFS mount failed!");
   } else {
-    Serial.println(F("✅ SPIFFS mounted"));
+    Serial.println("✅ SPIFFS mounted");
   }
 
-  // Load Token Table
-  if (loadTokenMap("/tokens.txt")) {
-    Serial.println(F("✅ Token map loaded"));
+  // Load Token Map
+  if (loadTokenMap("/tokens_shell.txt")) {
+    Serial.println("✅ Token map loaded");
   } else {
-    Serial.println(F("⚠️ No token table found"));
+    Serial.println("⚠️ No token map found (continuing)");
   }
 
-  // Initialize OLED
+  // Init OLED
   initOLED("ULTIMESH", "USB");
 
-  // Initialize LoRa
-  Serial.println(F("🔌 Initializing LoRa..."));
+  // Init LoRa
+  Serial.println("🔌 Initializing LoRa...");
   initLoRa();
 }
 
 void loop() {
-  // === OLED Live Update ===
-  if (millis() - lastOLEDUpdate >= OLED_REFRESH_INTERVAL) {
-    updateOLEDStats();
-    lastOLEDUpdate = millis();
-  }
-
-  // === LoRa Traffic Handler ===
+  handleSerialShell();
   handleLoRaTraffic();
 
-  // === (Placeholder) Serial Shell Input Handler ===
-  // handleSerialShellInput();  // [TODO: Add command shell]
-
-  delay(10); // Small yield
+  static unsigned long lastUpdate = 0;
+  if (millis() - lastUpdate > 5000) { // Refresh OLED stats every 5 sec
+    updateOLEDStats();
+    lastUpdate = millis();
+  }
 }

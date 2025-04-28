@@ -1,0 +1,5 @@
+100=help
+101=list
+102=free
+103=echo
+104=connect

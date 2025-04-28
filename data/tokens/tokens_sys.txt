@@ -1,0 +1,5 @@
+200=boot
+201=reset
+202=status
+203=shutdown
+204=restart

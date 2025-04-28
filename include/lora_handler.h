@@ -5,5 +5,6 @@
 
 void initLoRa();
 void handleLoRaTraffic();
+void sendMessage(const String& msg);  // ✅ <-- This line was missing!
 
 #endif

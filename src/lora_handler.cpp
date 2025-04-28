@@ -27,3 +27,10 @@ void handleLoRaTraffic() {
     Serial.println(packetSize);
   }
 }
+
+// ✨ MISSING FUNCTION ADDED HERE
+void sendMessage(const String& msg) {
+  LoRa.beginPacket();
+  LoRa.print(msg);
+  LoRa.endPacket();
+}
