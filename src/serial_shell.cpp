@@ -1,4 +1,4 @@
-// File: serial_shell.cpp
+// File: src/serial_shell.cpp
 
 #include "serial_shell.h"
 #include "file_storage.h"
@@ -11,67 +11,107 @@
 String inputBuffer = "";
 char activePrefix = ':'; // Default to shell mode
 
+extern std::map<uint16_t, String> tokenMap; // From token_codec
+
+// Update the prompt after every action
+void updatePrompt() {
+    Serial.printf("ULTIMESH:%c$ ", activePrefix);
+}
+
+// Handle ':' prefix (Shell Commands)
 void handleColonCommand(const String& command) {
     if (command == "list") {
         listFiles();
     } else if (command == "free") {
         size_t total = SPIFFS.totalBytes();
         size_t used = SPIFFS.usedBytes();
-        Serial.printf("🧠 RAM Free: %d KB\n", ESP.getFreeHeap() / 1024);
-        Serial.printf("💾 Flash: %d/%d KB\n", used / 1024, total / 1024);
+        Serial.printf("RAM Free: %d KB\n", ESP.getFreeHeap() / 1024);
+        Serial.printf("Flash: %d/%d KB\n", used / 1024, total / 1024);
     } else if (command.startsWith("cat ")) {
         String filename = command.substring(4);
-        String content = readFile(filename.c_str());
-        Serial.println(content);
+        if (!filename.startsWith("/")) {
+            filename = "/" + filename;
+        }
+        File file = SPIFFS.open(filename, FILE_READ);
+        if (!file || file.size() == 0) {
+            Serial.println("[Error] File not found or empty.");
+        } else {
+            Serial.println("----- File Start -----");
+            while (file.available()) {
+                Serial.write(file.read());
+            }
+            Serial.println("\n----- File End -----");
+            file.close();
+        }
     } else if (command.startsWith("rm ")) {
         String filename = command.substring(3);
+        if (!filename.startsWith("/")) {
+            filename = "/" + filename;
+        }
         if (SPIFFS.remove(filename)) {
-            Serial.printf("✅ Deleted %s\n", filename.c_str());
+            Serial.println("[OK] File deleted.");
         } else {
-            Serial.printf("❌ Failed to delete %s\n", filename.c_str());
+            Serial.println("[Error] Failed to delete.");
+        }
+    } else if (command == "tokens") {
+        Serial.println("Current Token Map:");
+        for (const auto& pair : tokenMap) {
+            Serial.printf("%d = %s\n", pair.first, pair.second.c_str());
         }
     } else if (command == "help") {
-        Serial.println("📖 Shell Commands:");
-        Serial.println(": list      - List files");
-        Serial.println(": free      - Show RAM and Flash usage");
-        Serial.println(": cat <file> - View file contents");
-        Serial.println(": rm <file> - Delete file");
-        Serial.println(": help      - Show this help");
+        Serial.println("Shell Commands:");
+        Serial.println(": list        - List files");
+        Serial.println(": free        - Show RAM and Flash usage");
+        Serial.println(": cat <file>  - View file contents");
+        Serial.println(": rm <file>   - Delete file");
+        Serial.println(": tokens      - List token map");
+        Serial.println(": help        - Show this help");
     } else {
-        Serial.println("❓ Unknown command");
+        Serial.println("Unknown command.");
     }
 }
 
+// Handle line entered into the serial shell
 void handleInputLine(const String& line) {
     if (line.length() == 0) return;
 
-    // Only allow switch if prefix + space detected
-    if ((line.charAt(0) == ':' || line.charAt(0) == '>' || line.charAt(0) == '/' || line.charAt(0) == '~')
-        && line.charAt(1) == ' ') {
-        activePrefix = line.charAt(0);
-        Serial.printf("🔁 Switched mode to '%c'\n", activePrefix);
-        inputBuffer = line.substring(2); // skip prefix and space
+    char prefix = line.charAt(0);
+
+    if (prefix == ':' || prefix == '>' || prefix == '/' || prefix == '~') {
+        activePrefix = prefix;
+        Serial.printf("[Switched mode to '%c']\n", activePrefix);
+        updatePrompt();
+        if (line.length() > 2) {
+            inputBuffer = line.substring(2);
+        } else {
+            inputBuffer = "";
+        }
     } else {
-        inputBuffer = line; // No mode switch, use current active mode
+        inputBuffer = line;
     }
+
+    if (inputBuffer.length() == 0) return; // Don't process if nothing entered
 
     switch (activePrefix) {
         case ':':
             handleColonCommand(inputBuffer);
             break;
         case '>':
-            Serial.printf("📤 Sending message: %s\n", encodeText(inputBuffer).c_str());
+            Serial.printf("Sending message: %s\n", encodeText(inputBuffer).c_str());
             sendMessage(encodeText(inputBuffer));
             break;
         case '/':
-            Serial.println("🌐 Web nav not ready yet");
+            Serial.println("[Web nav not ready yet]");
             break;
         case '~':
-            Serial.println("📟 BBS mode coming soon");
+            Serial.println("[BBS mode coming soon]");
             break;
     }
+
+    updatePrompt(); // Always reprint prompt
 }
 
+// Main shell handler (called inside loop())
 void handleSerialShell() {
     while (Serial.available()) {
         char c = Serial.read();
@@ -80,7 +120,7 @@ void handleSerialShell() {
             inputBuffer = "";
         } else if (c != '\r') {
             inputBuffer += c;
-            Serial.print(c); // Live echo
+            Serial.print(c); // Live character echo
         }
     }
 }

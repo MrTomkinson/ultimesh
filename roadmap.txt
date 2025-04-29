@@ -1,0 +1,32 @@
+ ____  _ _ _                         _
+|  _ \(_) | |_   _ _ __ ___  __ _  __| |___
+| |_) | | | | | | | '__/ _ \/ _` |/ _` / __|
+|  _ <| | | | | |_| | | |  __/ (_| | (_| \__ \
+|_| \_\_|_|_|\__, |_|  \___|\__,_|\__,_|___/
+             |___/
+ __  __           _     _     _
+|  \/  | ___   __| | __| | __| |___
+| |\/| |/ _ \ / _` |/ _` |/ _` / __|
+| |  | | (_) | (_| | (_| | (_| \__ \
+|_|  |_|\___/ \__,_|\__,_|\__,_|___/
+
++--------------------------------------------------+
+| 🌊 v0.A1 - "Ride The Wave!"                      |
+|                                                  |
+| ✅ PlatformIO minimal boot / SPIFFS mount        |
+| ✅ OLED splashscreen + basic status              |
+| ✅ Basic serial shell (list, free, cat, rm, help) |
+| ✅ Token Encoder / Decoder active                |
+| ✅ GitHub repo connected (manual push)            |
+| ✅ Full Flash Backup / Restore scripts           |
+| 🔵 Expanding Shell Commands (in progress)        |
+| 🔵 Token storage split (shell/sys/web/chat)      |
+| 🔲 First LoRa send/receive integration           |
+| 🔲 CF Card + Parallel Port (mode switcher)       |
+| 🔲 Simple Web Server mode (WiFi serving)         |
+| 🔲 IRC Gateway for retro chats                   |
+| 🔲 BBS Emulation over LoRa                       |
+| 🔲 OTA Update (optional future)                  |
+| 🔲 Telnet Daemon (optional future)               |
+| 🔲 Drive hot-swap detection                      |
++--------------------------------------------------+

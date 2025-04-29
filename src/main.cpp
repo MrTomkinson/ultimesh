@@ -1,48 +1,40 @@
+// File: src/main.cpp
+
 #include <Arduino.h>
-#include "oled_status.h"
 #include "file_storage.h"
+#include "oled_status.h"
 #include "token_codec.h"
 #include "serial_shell.h"
 #include "lora_handler.h"
-#include <FS.h>
-#include <SPIFFS.h>
+#include <esp_timer.h> // ← We forgot to include this before!
+
+uint64_t bootTime = 0;  // ← Declare it here
 
 void setup() {
   Serial.begin(115200);
   delay(500);
 
-  Serial.println("🏄 ULTIMESH 🏄");
-  Serial.println("v0.A1 - \"Ride the wave!\"");
+  bootTime = esp_timer_get_time(); // Save boot time!
 
-  // Initialize SPIFFS
-  if (!SPIFFS.begin(true)) {
-    Serial.println("❌ SPIFFS mount failed!");
-  } else {
-    Serial.println("✅ SPIFFS mounted");
-  }
-
-  // Load Token Map
-  if (loadTokenMap("/tokens_shell.txt")) {
-    Serial.println("✅ Token map loaded");
-  } else {
-    Serial.println("⚠️ No token map found (continuing)");
-  }
-
-  // Init OLED
   initOLED("ULTIMESH", "USB");
 
-  // Init LoRa
-  Serial.println("🔌 Initializing LoRa...");
+  if (initFileSystem()) {
+    updateOLEDStatus("SPIFFS OK");
+  } else {
+    updateOLEDStatus("SPIFFS ERR");
+  }
+
+  if (loadTokenMap()) {
+    Serial.println("✅ Token map loaded");
+  } else {
+    Serial.println("❌ Token map failed");
+  }
+
   initLoRa();
 }
 
 void loop() {
   handleSerialShell();
   handleLoRaTraffic();
-
-  static unsigned long lastUpdate = 0;
-  if (millis() - lastUpdate > 5000) { // Refresh OLED stats every 5 sec
-    updateOLEDStats();
-    lastUpdate = millis();
-  }
+  delay(5); // loop chill
 }
