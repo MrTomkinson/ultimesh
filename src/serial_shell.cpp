@@ -8,17 +8,13 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+extern std::map<uint16_t, String> tokenMap;
+extern bool stickyTopEnabled;
+extern void drawTopScreen();
+
 String inputBuffer = "";
-char activePrefix = ':'; // Default to shell mode
+char activePrefix = ':'; // Default shell mode
 
-extern std::map<uint16_t, String> tokenMap; // From token_codec
-
-// Update the prompt after every action
-void updatePrompt() {
-    Serial.printf("ULTIMESH:%c$ ", activePrefix);
-}
-
-// Handle ':' prefix (Shell Commands)
 void handleColonCommand(const String& command) {
     if (command == "list") {
         listFiles();
@@ -32,32 +28,34 @@ void handleColonCommand(const String& command) {
         if (!filename.startsWith("/")) {
             filename = "/" + filename;
         }
-        File file = SPIFFS.open(filename, FILE_READ);
-        if (!file || file.size() == 0) {
-            Serial.println("[Error] File not found or empty.");
+        String content = readFile(filename.c_str());
+        if (content.length() > 0) {
+            Serial.println(content);
         } else {
-            Serial.println("----- File Start -----");
-            while (file.available()) {
-                Serial.write(file.read());
-            }
-            Serial.println("\n----- File End -----");
-            file.close();
+            Serial.println("[Error] Empty file or file not found.");
         }
     } else if (command.startsWith("rm ")) {
         String filename = command.substring(3);
         if (!filename.startsWith("/")) {
             filename = "/" + filename;
         }
-        if (SPIFFS.remove(filename)) {
-            Serial.println("[OK] File deleted.");
+        if (SPIFFS.exists(filename)) {
+            SPIFFS.remove(filename);
+            Serial.printf("[Info] Deleted: %s\n", filename.c_str());
         } else {
-            Serial.println("[Error] Failed to delete.");
+            Serial.println("[Error] File not found.");
         }
     } else if (command == "tokens") {
         Serial.println("Current Token Map:");
         for (const auto& pair : tokenMap) {
             Serial.printf("%d = %s\n", pair.first, pair.second.c_str());
         }
+    } else if (command == "top") {
+        stickyTopEnabled = !stickyTopEnabled;
+        Serial.printf("[System] Top Sticky mode: %s\n", stickyTopEnabled ? "ON" : "OFF");
+    } else if (command == "topx") {
+        stickyTopEnabled = false;
+        Serial.println("[System] Top Sticky forcibly disabled.");
     } else if (command == "help") {
         Serial.println("Shell Commands:");
         Serial.println(": list        - List files");
@@ -65,13 +63,14 @@ void handleColonCommand(const String& command) {
         Serial.println(": cat <file>  - View file contents");
         Serial.println(": rm <file>   - Delete file");
         Serial.println(": tokens      - List token map");
+        Serial.println(": top         - Toggle system monitor");
+        Serial.println(": topx        - Force disable monitor");
         Serial.println(": help        - Show this help");
     } else {
         Serial.println("Unknown command.");
     }
 }
 
-// Handle line entered into the serial shell
 void handleInputLine(const String& line) {
     if (line.length() == 0) return;
 
@@ -80,17 +79,10 @@ void handleInputLine(const String& line) {
     if (prefix == ':' || prefix == '>' || prefix == '/' || prefix == '~') {
         activePrefix = prefix;
         Serial.printf("[Switched mode to '%c']\n", activePrefix);
-        updatePrompt();
-        if (line.length() > 2) {
-            inputBuffer = line.substring(2);
-        } else {
-            inputBuffer = "";
-        }
+        inputBuffer = line.substring(2);
     } else {
         inputBuffer = line;
     }
-
-    if (inputBuffer.length() == 0) return; // Don't process if nothing entered
 
     switch (activePrefix) {
         case ':':
@@ -107,20 +99,18 @@ void handleInputLine(const String& line) {
             Serial.println("[BBS mode coming soon]");
             break;
     }
-
-    updatePrompt(); // Always reprint prompt
 }
 
-// Main shell handler (called inside loop())
 void handleSerialShell() {
     while (Serial.available()) {
         char c = Serial.read();
         if (c == '\n') {
             handleInputLine(inputBuffer);
             inputBuffer = "";
+            Serial.print("ULTIMESH:$ ");
         } else if (c != '\r') {
             inputBuffer += c;
-            Serial.print(c); // Live character echo
+            Serial.print(c); // Live echo
         }
     }
 }

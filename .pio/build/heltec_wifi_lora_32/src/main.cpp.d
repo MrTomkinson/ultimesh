@@ -133,5 +133,7 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- include/file_storage.h include/oled_status.h include/token_codec.h \
- include/serial_shell.h include/lora_handler.h
+ include/oled_status.h include/serial_shell.h include/token_codec.h \
+ include/file_storage.h include/lora_handler.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h

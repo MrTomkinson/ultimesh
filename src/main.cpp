@@ -1,40 +1,44 @@
-// File: src/main.cpp
-
 #include <Arduino.h>
-#include "file_storage.h"
 #include "oled_status.h"
-#include "token_codec.h"
 #include "serial_shell.h"
+#include "token_codec.h"
+#include "file_storage.h"
 #include "lora_handler.h"
-#include <esp_timer.h> // ← We forgot to include this before!
+#include <SPIFFS.h>
 
-uint64_t bootTime = 0;  // ← Declare it here
+unsigned long bootTime = 0;
+bool stickyTopEnabled = false;
+unsigned long lastTopUpdate = 0;
 
 void setup() {
   Serial.begin(115200);
-  delay(500);
-
-  bootTime = esp_timer_get_time(); // Save boot time!
+  delay(100);
 
   initOLED("ULTIMESH", "USB");
+  drawPagerScreen("ULTIMESH", "USB");
 
-  if (initFileSystem()) {
-    updateOLEDStatus("SPIFFS OK");
-  } else {
-    updateOLEDStatus("SPIFFS ERR");
+  if (!initFileSystem()) {
+    Serial.println("[ERROR] Failed to init SPIFFS");
+    return;
   }
 
-  if (loadTokenMap()) {
-    Serial.println("✅ Token map loaded");
-  } else {
-    Serial.println("❌ Token map failed");
-  }
-
+  loadTokenMap("/tokens/tokens_shell.txt");
   initLoRa();
+
+  bootTime = millis();
 }
 
 void loop() {
   handleSerialShell();
-  handleLoRaTraffic();
-  delay(5); // loop chill
+
+  if (stickyTopEnabled) {
+    if (millis() - lastTopUpdate > 1000) {
+      drawTopScreen();
+      lastTopUpdate = millis();
+    }
+  } else {
+    drawPagerScreen("ULTIMESH", "USB");
+  }
+
+  delay(10); // Short delay to reduce input lag
 }

@@ -1,5 +1,6 @@
 .pio/build/heltec_wifi_lora_32/src/oled_status.cpp.o: src/oled_status.cpp \
  include/oled_status.h \
+ .pio/libdeps/heltec_wifi_lora_32/Adafruit\ GFX\ Library/Adafruit_GFX.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp_arduino_version.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/freertos/FreeRTOS.h \
@@ -134,12 +135,11 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src/Wire.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
- .pio/libdeps/heltec_wifi_lora_32/Adafruit\ GFX\ Library/Adafruit_GFX.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  .pio/libdeps/heltec_wifi_lora_32/Adafruit\ GFX\ Library/gfxfont.h \
  .pio/libdeps/heltec_wifi_lora_32/Adafruit\ BusIO/Adafruit_I2CDevice.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src/Wire.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
  .pio/libdeps/heltec_wifi_lora_32/Adafruit\ BusIO/Adafruit_SPIDevice.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
