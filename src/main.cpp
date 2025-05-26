@@ -1,44 +1,39 @@
 #include <Arduino.h>
 #include "oled_status.h"
 #include "serial_shell.h"
-#include "token_codec.h"
 #include "file_storage.h"
+#include "token_codec.h"
 #include "lora_handler.h"
-#include <SPIFFS.h>
 
-unsigned long bootTime = 0;
+unsigned long lastTopRefresh = 0;
 bool stickyTopEnabled = false;
-unsigned long lastTopUpdate = 0;
+
+const char* deviceName = "ULTIMESH";
+const char* connectionType = "USB";
 
 void setup() {
   Serial.begin(115200);
   delay(100);
 
-  initOLED("ULTIMESH", "USB");
-  drawPagerScreen("ULTIMESH", "USB");
-
-  if (!initFileSystem()) {
-    Serial.println("[ERROR] Failed to init SPIFFS");
-    return;
-  }
-
+  initOLED(deviceName, connectionType);
+  initFileSystem();
   loadTokenMap("/tokens/tokens_shell.txt");
   initLoRa();
 
-  bootTime = millis();
+  drawPagerScreen(deviceName, connectionType);
+  Serial.println("ULTIMESH:$ ");
 }
 
 void loop() {
   handleSerialShell();
+  handleLoRaTraffic();
 
-  if (stickyTopEnabled) {
-    if (millis() - lastTopUpdate > 1000) {
-      drawTopScreen();
-      lastTopUpdate = millis();
-    }
-  } else {
-    drawPagerScreen("ULTIMESH", "USB");
+  if (stickyTopEnabled && millis() - lastTopRefresh >= 2000) {
+    drawTopScreen();
+    lastTopRefresh = millis();
   }
 
-  delay(10); // Short delay to reduce input lag
+  if (!stickyTopEnabled) {
+    drawPagerScreen(deviceName, connectionType);
+  }
 }

@@ -1,6 +1,7 @@
 #include "lora_handler.h"
 #include <SPI.h>
 #include <LoRa.h>
+#include "token_codec.h"
 
 #define LORA_SCK 5
 #define LORA_MISO 19
@@ -14,23 +15,36 @@ void initLoRa() {
   Serial.println("[LoRa] Initializing...");
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
   if (!LoRa.begin(LORA_BAND)) {
-    Serial.println("❌ LoRa failed!");
+    Serial.println("[LoRa] LoRa init failed!");
     while (true);
   }
   Serial.println("[LoRa] Initialized");
 }
 
+void sendMessage(const String& encodedMessage, const char* recipient) {
+  // TODO: actual recipient logic
+  LoRa.beginPacket();
+  LoRa.print(encodedMessage);
+  LoRa.endPacket();
+}
+
+void sendMessage(const String& encodedMessage) {
+  sendMessage(encodedMessage, nullptr);  // broadcast for now
+}
+
 void handleLoRaTraffic() {
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
-    Serial.print("[LoRa] Packet received: ");
-    Serial.println(packetSize);
-  }
-}
+    String incoming = "";
+    while (LoRa.available()) {
+      incoming += (char)LoRa.read();
+    }
 
-// ✨ MISSING FUNCTION ADDED HERE
-void sendMessage(const String& msg) {
-  LoRa.beginPacket();
-  LoRa.print(msg);
-  LoRa.endPacket();
+    Serial.print("[LoRa] Packet received: ");
+    Serial.println(incoming);
+
+    String decoded = decodeTokens(incoming);
+    Serial.print("[LoRa] Decoded: ");
+    Serial.println(decoded);
+  }
 }

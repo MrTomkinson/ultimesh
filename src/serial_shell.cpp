@@ -1,5 +1,3 @@
-// File: src/serial_shell.cpp
-
 #include "serial_shell.h"
 #include "file_storage.h"
 #include "token_codec.h"
@@ -8,12 +6,11 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
-extern std::map<uint16_t, String> tokenMap;
+extern std::map<String, uint16_t> reverseMap;
 extern bool stickyTopEnabled;
-extern void drawTopScreen();
 
 String inputBuffer = "";
-char activePrefix = ':'; // Default shell mode
+char activePrefix = ':'; // Default to shell mode
 
 void handleColonCommand(const String& command) {
     if (command == "list") {
@@ -25,37 +22,32 @@ void handleColonCommand(const String& command) {
         Serial.printf("Flash: %d/%d KB\n", used / 1024, total / 1024);
     } else if (command.startsWith("cat ")) {
         String filename = command.substring(4);
-        if (!filename.startsWith("/")) {
-            filename = "/" + filename;
-        }
         String content = readFile(filename.c_str());
-        if (content.length() > 0) {
-            Serial.println(content);
+        if (content.isEmpty()) {
+            Serial.println("[Error] File not found or empty.");
         } else {
-            Serial.println("[Error] Empty file or file not found.");
+            Serial.println(content);
         }
     } else if (command.startsWith("rm ")) {
         String filename = command.substring(3);
-        if (!filename.startsWith("/")) {
-            filename = "/" + filename;
-        }
-        if (SPIFFS.exists(filename)) {
-            SPIFFS.remove(filename);
-            Serial.printf("[Info] Deleted: %s\n", filename.c_str());
+        if (SPIFFS.remove(filename)) {
+            Serial.printf("Deleted: %s\n", filename.c_str());
         } else {
-            Serial.println("[Error] File not found.");
+            Serial.printf("[Error] Failed to delete: %s\n", filename.c_str());
         }
     } else if (command == "tokens") {
         Serial.println("Current Token Map:");
-        for (const auto& pair : tokenMap) {
-            Serial.printf("%d = %s\n", pair.first, pair.second.c_str());
+        for (const auto& pair : reverseMap) {
+            Serial.printf("%u = %s\n", pair.second, pair.first.c_str());
         }
     } else if (command == "top") {
-        stickyTopEnabled = !stickyTopEnabled;
-        Serial.printf("[System] Top Sticky mode: %s\n", stickyTopEnabled ? "ON" : "OFF");
-    } else if (command == "topx") {
-        stickyTopEnabled = false;
-        Serial.println("[System] Top Sticky forcibly disabled.");
+        if (stickyTopEnabled) {
+            stickyTopEnabled = false;
+            drawPagerScreen("PAGER", "USB");
+        } else {
+            stickyTopEnabled = true;
+            drawTopScreen();
+        }
     } else if (command == "help") {
         Serial.println("Shell Commands:");
         Serial.println(": list        - List files");
@@ -63,21 +55,37 @@ void handleColonCommand(const String& command) {
         Serial.println(": cat <file>  - View file contents");
         Serial.println(": rm <file>   - Delete file");
         Serial.println(": tokens      - List token map");
-        Serial.println(": top         - Toggle system monitor");
-        Serial.println(": topx        - Force disable monitor");
+        Serial.println(": top         - Show OLED system stats");
         Serial.println(": help        - Show this help");
     } else {
         Serial.println("Unknown command.");
     }
 }
 
+void handleGreaterThanCommand(const String& line) {
+    if (line.startsWith("dm ")) {
+        int firstSpace = line.indexOf(' ', 3);
+        if (firstSpace == -1) {
+            Serial.println("[Error] Usage: > dm <node> <message>");
+            return;
+        }
+        String target = line.substring(3, firstSpace);
+        String msg = line.substring(firstSpace + 1);
+        String encoded = encodeText(msg);
+        sendMessage(encoded, target.c_str());
+        Serial.printf("DM to [%s]: %s\n", target.c_str(), msg.c_str());
+    } else {
+        String encoded = encodeText(line);
+        sendMessage(encoded);
+        Serial.println("Message sent.");
+    }
+}
+
 void handleInputLine(const String& line) {
     if (line.length() == 0) return;
 
-    char prefix = line.charAt(0);
-
-    if (prefix == ':' || prefix == '>' || prefix == '/' || prefix == '~') {
-        activePrefix = prefix;
+    if (line.length() >= 2 && (line[0] == ':' || line[0] == '>' || line[0] == '/' || line[0] == '~') && line[1] == ' ') {
+        activePrefix = line[0];
         Serial.printf("[Switched mode to '%c']\n", activePrefix);
         inputBuffer = line.substring(2);
     } else {
@@ -89,8 +97,7 @@ void handleInputLine(const String& line) {
             handleColonCommand(inputBuffer);
             break;
         case '>':
-            Serial.printf("Sending message: %s\n", encodeText(inputBuffer).c_str());
-            sendMessage(encodeText(inputBuffer));
+            handleGreaterThanCommand(inputBuffer);
             break;
         case '/':
             Serial.println("[Web nav not ready yet]");
@@ -108,9 +115,14 @@ void handleSerialShell() {
             handleInputLine(inputBuffer);
             inputBuffer = "";
             Serial.print("ULTIMESH:$ ");
+        } else if (c == 0x08 || c == 127) { // Handle backspace
+            if (inputBuffer.length() > 0) {
+                inputBuffer.remove(inputBuffer.length() - 1);
+                Serial.print("\b \b");
+            }
         } else if (c != '\r') {
             inputBuffer += c;
-            Serial.print(c); // Live echo
+            Serial.print(c);
         }
     }
 }
