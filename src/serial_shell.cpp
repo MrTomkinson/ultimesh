@@ -3,120 +3,321 @@
 #include "token_codec.h"
 #include "lora_handler.h"
 #include "oled_status.h"
-#include <FS.h>
+#include "text_editor.h"
+#include "common_config.h"
+#include "config_loader.h"
+
 #include <SPIFFS.h>
+#include <FS.h>
+#include <vector>
+#include <map>
 
 extern std::map<String, uint16_t> reverseMap;
 extern bool stickyTopEnabled;
 
 String inputBuffer = "";
-char activePrefix = ':'; // Default to shell mode
+char activePrefix = ':';
 
-void handleColonCommand(const String& command) {
-    if (command == "list") {
-        listFiles();
-    } else if (command == "free") {
-        size_t total = SPIFFS.totalBytes();
-        size_t used = SPIFFS.usedBytes();
-        Serial.printf("RAM Free: %d KB\n", ESP.getFreeHeap() / 1024);
-        Serial.printf("Flash: %d/%d KB\n", used / 1024, total / 1024);
-    } else if (command.startsWith("cat ")) {
-        String filename = command.substring(4);
-        String content = readFile(filename.c_str());
+#if ENABLE_COMMAND_HISTORY
+std::vector<String> commandHistory;
+int historyIndex = -1;
+#endif
+
+std::vector<String> tokenize(const String &input) {
+    std::vector<String> tokens;
+    String token = "";
+    for (unsigned int i = 0; i < input.length(); i++) {
+        if (input[i] == ' ') {
+            if (token.length()) {
+                tokens.push_back(token);
+                token = "";
+            }
+        } else {
+            token += input[i];
+        }
+    }
+    if (token.length()) tokens.push_back(token);
+    return tokens;
+}
+
+#if ENABLE_TAB_COMPLETION
+std::vector<String> getAllCommands() {
+    return {
+        "ls", "list", "dir", "cat", "rm", "edit", "cp", "mv", "touch", "echo",
+        "tokens", "top", "clear", "cls", "help", "config"
+    };
+}
+
+std::vector<String> getMatchingCompletions(const String& prefix) {
+    std::vector<String> matches;
+
+    for (String cmd : getAllCommands()) {
+        if (cmd.startsWith(prefix)) {
+            matches.push_back(cmd);
+            if (matches.size() >= MAX_TAB_RESULTS) break;
+        }
+    }
+
+    File root = SPIFFS.open("/");
+    File file = root.openNextFile();
+    while (file) {
+        String name = String(file.name());
+        if (name.startsWith(prefix)) {
+            matches.push_back(name);
+            if (matches.size() >= MAX_TAB_RESULTS) break;
+        }
+        file = root.openNextFile();
+    }
+
+    return matches;
+}
+#endif
+
+void handleColonCommand(const String& rawCommand) {
+    String command = rawCommand;
+    command.trim();
+    command.replace("\\", "/");
+
+    if (command.startsWith("echo ")) {
+        int split = command.indexOf('>');
+        if (split > -1) {
+            String text = command.substring(5, split);
+            text.trim();
+            String path = command.substring(split + 1);
+            path.trim();
+
+            if (!path.startsWith("/")) path = "/" + path;
+            File f = SPIFFS.open(path, FILE_WRITE);
+            if (!f) {
+                Serial.printf("[!] Failed to open %s\n", path.c_str());
+            } else {
+                f.println(text);
+                f.close();
+                Serial.printf("[✓] Wrote to %s\n", path.c_str());
+            }
+            Serial.println();
+            Serial.print(":");
+            return;
+        }
+    }
+
+    std::vector<String> tokens = tokenize(command);
+    if (tokens.empty()) return;
+    String cmd = tokens[0];
+
+    if (cmd == "ls" || cmd == "list" || cmd == "dir") {
+        File root = SPIFFS.open("/");
+        File file = root.openNextFile();
+        while (file) {
+            Serial.printf("       %-24s %6d bytes\n", file.name(), file.size());
+            file = root.openNextFile();
+        }
+    }
+
+    else if (cmd == "config") {
+        printConfig();
+        Serial.println();
+        Serial.print(":");
+    }
+
+    else if (cmd == "cat" && tokens.size() > 1) {
+        String file = tokens[1];
+        if (!file.startsWith("/")) file = "/" + file;
+        String content = readFile(file.c_str());
         if (content.isEmpty()) {
-            Serial.println("[Error] File not found or empty.");
+            Serial.println("[!] Not found or empty.");
         } else {
             Serial.println(content);
         }
-    } else if (command.startsWith("rm ")) {
-        String filename = command.substring(3);
-        if (SPIFFS.remove(filename)) {
-            Serial.printf("Deleted: %s\n", filename.c_str());
+    }
+
+    else if (cmd == "rm" && tokens.size() > 1) {
+        String file = tokens[1];
+        if (!file.startsWith("/")) file = "/" + file;
+        if (SPIFFS.remove(file)) {
+            Serial.printf("[✓] Deleted: %s\n", file.c_str());
         } else {
-            Serial.printf("[Error] Failed to delete: %s\n", filename.c_str());
+            Serial.printf("[!] Failed to delete: %s\n", file.c_str());
         }
-    } else if (command == "tokens") {
-        Serial.println("Current Token Map:");
-        for (const auto& pair : reverseMap) {
+    }
+
+    else if (cmd == "edit" && tokens.size() > 1) {
+        String file = tokens[1];
+        if (!file.startsWith("/")) file = "/" + file;
+        launchTextEditor(file);
+        activePrefix = ':';
+    }
+
+    else if (cmd == "cp" && tokens.size() > 2) {
+        String src = tokens[1], dst = tokens[2];
+        if (!src.startsWith("/")) src = "/" + src;
+        if (!dst.startsWith("/")) dst = "/" + dst;
+        File in = SPIFFS.open(src, FILE_READ);
+        File out = SPIFFS.open(dst, FILE_WRITE);
+        if (!in || !out) {
+            Serial.println("[!] Copy failed.");
+        } else {
+            while (in.available()) out.write(in.read());
+            Serial.printf("[✓] Copied %s → %s\n", src.c_str(), dst.c_str());
+        }
+        in.close();
+        out.close();
+    }
+
+    else if (cmd == "mv" && tokens.size() > 2) {
+        String src = tokens[1], dst = tokens[2];
+        if (!src.startsWith("/")) src = "/" + src;
+        if (!dst.startsWith("/")) dst = "/" + dst;
+        if (SPIFFS.rename(src, dst)) {
+            Serial.printf("[✓] Renamed to: %s\n", dst.c_str());
+        } else {
+            Serial.println("[!] Rename failed.");
+        }
+    }
+
+    else if (cmd == "touch" && tokens.size() > 1) {
+        String file = tokens[1];
+        if (!file.startsWith("/")) file = "/" + file;
+        File f = SPIFFS.open(file, FILE_WRITE);
+        if (f) {
+            f.close();
+            Serial.printf("[✓] Created: %s\n", file.c_str());
+        } else {
+            Serial.println("[!] Failed to create.");
+        }
+    }
+
+    else if (cmd == "top") {
+        stickyTopEnabled = !stickyTopEnabled;
+        stickyTopEnabled ? drawTopScreen() : drawPagerScreen("PAGER", "USB");
+    }
+
+    else if (cmd == "tokens") {
+        for (auto &pair : reverseMap) {
             Serial.printf("%u = %s\n", pair.second, pair.first.c_str());
         }
-    } else if (command == "top") {
-        if (stickyTopEnabled) {
-            stickyTopEnabled = false;
-            drawPagerScreen("PAGER", "USB");
-        } else {
-            stickyTopEnabled = true;
-            drawTopScreen();
-        }
-    } else if (command == "help") {
-        Serial.println("Shell Commands:");
-        Serial.println(": list        - List files");
-        Serial.println(": free        - Show RAM and Flash usage");
-        Serial.println(": cat <file>  - View file contents");
-        Serial.println(": rm <file>   - Delete file");
-        Serial.println(": tokens      - List token map");
-        Serial.println(": top         - Show OLED system stats");
-        Serial.println(": help        - Show this help");
-    } else {
-        Serial.println("Unknown command.");
     }
-}
 
-void handleGreaterThanCommand(const String& line) {
-    if (line.startsWith("dm ")) {
-        int firstSpace = line.indexOf(' ', 3);
-        if (firstSpace == -1) {
-            Serial.println("[Error] Usage: > dm <node> <message>");
-            return;
-        }
-        String target = line.substring(3, firstSpace);
-        String msg = line.substring(firstSpace + 1);
-        String encoded = encodeText(msg);
-        sendMessage(encoded, target.c_str());
-        Serial.printf("DM to [%s]: %s\n", target.c_str(), msg.c_str());
-    } else {
-        String encoded = encodeText(line);
-        sendMessage(encoded);
-        Serial.println("Message sent.");
+    else if (cmd == "clear" || cmd == "cls") {
+        Serial.print("\033[2J\033[H");
     }
+
+    else if (cmd == "config") {
+        printConfig();
+    }
+
+    else if (cmd == "help") {
+        Serial.println("Commands:");
+        Serial.println(": ls / list / dir      - List files");
+        Serial.println(": cat <file>           - View file");
+        Serial.println(": edit <file>          - Edit file");
+        Serial.println(": rm <file>            - Delete file");
+        Serial.println(": cp <src> <dst>       - Copy file");
+        Serial.println(": mv <src> <dst>       - Rename file");
+        Serial.println(": touch <file>         - Create file");
+        Serial.println(": echo text > file     - Write file");
+        Serial.println(": config               - Show runtime config");
+        Serial.println(": clear / cls          - Clear screen");
+        Serial.println(": help                 - Show this help");
+    }
+
+    else {
+        Serial.println("[?] Unknown command. Try : help");
+    }
+
+    Serial.println();
+    Serial.print(":");
+#if ENABLE_COMMAND_HISTORY
+    if (command.length() > 0) {
+        if (commandHistory.empty() || command != commandHistory.back()) {
+            if (commandHistory.size() >= MAX_HISTORY_ENTRIES) {
+                commandHistory.erase(commandHistory.begin());
+            }
+            commandHistory.push_back(command);
+        }
+    }
+    historyIndex = commandHistory.size();
+#endif
 }
 
 void handleInputLine(const String& line) {
     if (line.length() == 0) return;
 
-    if (line.length() >= 2 && (line[0] == ':' || line[0] == '>' || line[0] == '/' || line[0] == '~') && line[1] == ' ') {
-        activePrefix = line[0];
-        Serial.printf("[Switched mode to '%c']\n", activePrefix);
-        inputBuffer = line.substring(2);
-    } else {
-        inputBuffer = line;
-    }
+    inputBuffer = line;
 
     switch (activePrefix) {
-        case ':':
-            handleColonCommand(inputBuffer);
-            break;
-        case '>':
-            handleGreaterThanCommand(inputBuffer);
-            break;
-        case '/':
-            Serial.println("[Web nav not ready yet]");
-            break;
-        case '~':
-            Serial.println("[BBS mode coming soon]");
-            break;
+        case ':': handleColonCommand(inputBuffer); break;
+        case '>': Serial.println("[LoRa mode soon]"); break;
+        case '/': Serial.println("[Web mode coming]"); break;
+        case '~': Serial.println("[BBS mode WIP]"); break;
     }
+
+    Serial.print(activePrefix);
+    Serial.print("/\n");
 }
 
 void handleSerialShell() {
     while (Serial.available()) {
         char c = Serial.read();
+
         if (c == '\n') {
             handleInputLine(inputBuffer);
             inputBuffer = "";
-            Serial.print("ULTIMESH:$ ");
-        } else if (c == 0x08 || c == 127) { // Handle backspace
-            if (inputBuffer.length() > 0) {
+        }
+
+#if ENABLE_COMMAND_HISTORY
+        else if (c == 0x1B) {
+            while (!Serial.available());
+            if (Serial.read() == '[') {
+                char dir = Serial.read();
+                if (dir == 'A' && historyIndex > 0) {
+                    historyIndex--;
+                    inputBuffer = commandHistory[historyIndex];
+                    Serial.print("\r:");
+                    Serial.print(inputBuffer);
+                } else if (dir == 'B') {
+                    if (historyIndex < commandHistory.size() - 1) historyIndex++;
+                    else historyIndex = commandHistory.size();
+                    inputBuffer = (historyIndex < commandHistory.size()) ? commandHistory[historyIndex] : "";
+                    Serial.print("\r:");
+                    Serial.print(inputBuffer);
+                }
+            }
+        }
+#endif
+
+#if ENABLE_TAB_COMPLETION
+        else if (c == '\t') {
+            int lastSpace = inputBuffer.lastIndexOf(' ');
+            String prefix = inputBuffer;
+            String preCursor = "";
+            if (lastSpace != -1) {
+                prefix = inputBuffer.substring(lastSpace + 1);
+                preCursor = inputBuffer.substring(0, lastSpace + 1);
+            }
+
+            std::vector<String> matches = getMatchingCompletions(prefix);
+            if (matches.size() == 1) {
+                inputBuffer = preCursor + matches[0];
+                Serial.print("\r:");
+                Serial.print(inputBuffer);
+            } else if (matches.size() > 1) {
+                Serial.println();
+                Serial.println("[Matches]");
+                for (String s : matches) Serial.println(" - " + s);
+                Serial.print(":");
+                Serial.print(inputBuffer);
+            } else {
+                Serial.println();
+                Serial.println("[No match]");
+                Serial.print(":");
+                Serial.print(inputBuffer);
+            }
+        }
+#endif
+
+        else if (c == 0x08 || c == 127) {
+            if (inputBuffer.length()) {
                 inputBuffer.remove(inputBuffer.length() - 1);
                 Serial.print("\b \b");
             }

@@ -1,143 +1,95 @@
-
 # ULTIMESH
 
-ULTIMESH is a retro-inspired ESP32 LoRa mesh terminal built for portable, emergency, and offline communications. It supports ASCII-only interaction, modular shell commands, token-based message compression, and eventual web/BBS access. Built specifically for retro systems, it works over serial, parallel, and USB.
-
+ULTIMESH is a retro-inspired ESP32 LoRa mesh terminal built for offline, portable, and emergency communications. Designed to run headless and serial-attached, it provides a modular shell, tokenized LoRa chat (WIP), file tools, OLED system view, and an onboard editable config system.
+Turn ANY digital computer or dumb terminal into a fully self contained communication device. Allows for lora and wifi communication oner usb, serial and parallel. Access other nodes, internet or C/F mounted files on any system, anywhere.
 ---
 
 ## 📦 Features
 
-- Dual-mode OLED display: pager + system monitor (`top`)
-- ASCII command shell with prefix-based interaction
-- SPIFFS filesystem (6MB+) for token storage and files
-- Tokenized LoRa chat with DM support (WIP)
-- Modular interface support: USB, serial, LPT, CF-card (planned)
-- Self-flashing, reflashing, and diagnostic shell tools (internal)
+- Dual-mode OLED display (pager + system monitor)
+- Modular ASCII command shell with DOS/Linux aliases
+- Editable token map & persistent SPIFFS storage
+- Minimal built-in file editor (nano/dosedit style)
+- Tab-completion (commands and files)
+- Configurable runtime values (via `/config.ini`)
+- Flat virtual filesystem for SPIFFS, CF support planned
+- Live mode switching: shell `:`, lora `>`, web `/`, BBS `~`
 
 ---
 
-## 🔧 Build + Flash Instructions
+## 🔧 Build Instructions
 
-1. **Activate virtual environment**
-   ```bash
-   cd ~/ultimesh
-   source .platformio-env/bin/activate
-   ```
+```bash
+cd ~/ultimesh
+source .platformio-env/bin/activate
 
-2. **Build and upload firmware to Heltec ESP32**
-   ```bash
-   platformio run --target upload
-   ```
+# Upload firmware
+platformio run --target upload
 
-3. **Monitor serial output**
-   ```bash
-   platformio device monitor --baud 115200
-   ```
+# Upload SPIFFS data (/data/)
+platformio run --target uploadfs
 
-4. **Optional: Flash SPIFFS image (for token files etc)**
-   ```bash
-   platformio run --target uploadfs
-   ```
+# Monitor output
+platformio device monitor --baud 115200
 
----
+💻 Shell Commands
+Command	Description
+ls / list / dir	List SPIFFS files
+cat <file>	View file contents
+edit <file>	Launch file editor
+rm <file>	Delete file
+cp <src> <dst>	Copy file
+mv <src> <dst>	Rename/move file
+touch <file>	Create empty file
+echo text > file	Write text to file
+config	Show runtime config (/config.ini)
+clear / cls	Clear screen
+tokens	Show loaded token map
+top	Toggle OLED system monitor
+help	Show this help screen
 
-## 💻 Shell Modes
+🛠 Editor Controls
+Ctrl+S – Save
 
-ULTIMESH uses persistent shell modes, switched with a leading character:
+Ctrl+A – Save As
 
-| Prefix | Mode           | Example                      |
-|--------|----------------|------------------------------|
-| `:`    | Shell          | `: help`, `: top`            |
-| `>`    | Chat/DM        | `> dm node1 hello world`     |
-| `/`    | Web nav (WIP)  | `/ go home`                  |
-| `~`    | BBS nav (WIP)  | `~ inbox`                    |
+Ctrl+N – New File
 
----
+Ctrl+Q – Quit
 
-## 🛠️ Shell Commands (in `:` mode)
+Ctrl+I – Help Menu
 
-- `: list` — List SPIFFS files
-- `: free` — Show RAM + Flash usage
-- `: cat <file>` — View file contents
-- `: rm <file>` — Delete a file
-- `: tokens` — Show token table (TODO)
-- `: top` — Toggle OLED system monitor
-- `: help` — Display this help
+Arrow keys – Move cursor
 
----
+Tab – Command/File autocomplete
 
-## 🧾 Revision History
+📁 SPIFFS Layout
+Flat file structure only — directories simulated for compatibility (, not working well). All files referenced must be uploaded to /data/ before flashing:
 
-### 🔖 Revision 0.A2
-- Shell modes implemented with live prefix switching
-- Base commands: `list`, `free`, `cat`, `rm`, `top`, `help`
-- Pager screen shown by default; SPIFFS stable
+/data/
+  test.txt
+   config.ini
+   tokens_shell.txt
+   tokens_sys.txt
+   etc
 
-### 🔖 Revision 0.A3
-- OLED dual-mode system fully working
-- `top` screen added (CPU/temp still `N/A`)
-- Time/date shown in pager mode
+   Files will appear as flat /tokens_xxx.txt entries inside SPIFFS.
 
-### 🔖 Revision 0.A4
-- Major bugfix: removed duplicate OLED function definitions
-- Top mode is now latched (toggles on/off)
-- `FL:` display now shows free space only to prevent text overflow
-- Repo stabilized and pushed to GitHub
+📡 Roadmap (Next)
+LoRa DM command support (> dm node message)
 
----
+Load/save multiple token maps dynamically
 
-## 🧰 Tools Summary
+Lynx-style text browser for internal web/BBS
 
-| Script / File        | Purpose                                 |
-|----------------------|-----------------------------------------|
-| `partitions.csv`     | Custom ESP32 partition layout (6MB+ SPIFFS) |
-| `platformio.ini`     | PlatformIO board config                 |
-| `.platformio-env/`   | Virtualenv for isolated builds          |
-| `/tokens/*.txt`      | Token maps used for encoding LoRa messages |
-| `esptool.py` (opt)   | Flash bootloader + firmware + SPIFFS in one step |
+Configurable editor keys (via config file)
 
----
+CF-card support for true directory structure
 
-## 📡 Roadmap
+Background LoRa listener buffer with log view
 
-- [ ] Implement `> dm <node> <msg>` with tokenized LoRa sending
-- [ ] Add token map editing shell commands
-- [ ] Parse incoming LoRa messages and display
-- [ ] Fix CPU/TEMP readings on OLED
-- [ ] Web/BBS browsing from SPIFFS
-
----
-
-## 📁 Filesystem Notes
-
-SPIFFS is mounted as root `/`, and file I/O supports listing, deletion, and viewing. Upload `tokens.txt` manually or with `uploadfs` to enable compression.
-
----
-
-## 🧠 Project Philosophy
-
-> “Everything old is new again.”  
-ULTIMESH is about keeping offline tech alive, usable, and portable — even when the world goes dark. ASCII-first. Retro-compatible. Mesh-ready.
-
----
+🧠 Project Philosophy
+"Everything old is new again."
+ULTIMESH is for people who want control, visibility, and function even when the world is dark. ASCII-first. Serial-native. Mesh-ready.
 
 © 2025 MrTomkinson / oldtechlife.com
-
----
-
-## 🛠️ Custom Tool Scripts (located in `tools/`)
-
-These scripts bypass PlatformIO's upload behavior to ensure consistent flashing, especially for Heltec ESP32 boards with 8MB flash and large SPIFFS:
-
-| Script              | Purpose                                                    |
-|---------------------|------------------------------------------------------------|
-| `flash_all.sh`      | Flash firmware + filesystem + bootloader all in one pass  |
-| `burn_all.sh`       | Fully erase and reflash everything (factory reset)         |
-| `backup_all.sh`     | Backup entire flash image (firmware + SPIFFS)              |
-| `backup_firmware.sh`| Save just the firmware portion of flash                    |
-| `backup_spiffs.sh`  | Save only the SPIFFS filesystem                            |
-| `restore_spiffs.sh` | Restore SPIFFS content from backup                         |
-
-These should be run from the `tools/` directory. Most use `esptool.py` internally and expect:
-- A connected ESP32 via `/dev/ttyUSB0` or `/dev/ttyUSB1`
-- Pre-built `.bin` files from PlatformIO output folder

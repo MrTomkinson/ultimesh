@@ -136,4 +136,4 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
- .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h
+ .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h include/token_codec.h

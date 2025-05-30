@@ -4,6 +4,9 @@
 #include "file_storage.h"
 #include "token_codec.h"
 #include "lora_handler.h"
+#include "config_loader.h"
+#include <FS.h>
+#include <SPIFFS.h>
 
 unsigned long lastTopRefresh = 0;
 bool stickyTopEnabled = false;
@@ -14,6 +17,10 @@ const char* connectionType = "USB";
 void setup() {
   Serial.begin(115200);
   delay(100);
+  SPIFFS.begin(true);
+  loadConfig();  // Loads /config.ini from SPIFFS
+
+
 
   initOLED(deviceName, connectionType);
   initFileSystem();
@@ -36,4 +43,10 @@ void loop() {
   if (!stickyTopEnabled) {
     drawPagerScreen(deviceName, connectionType);
   }
+
+  if (!loadConfig()) {
+  Serial.println("[!] Config load failed.");
+}
+
+
 }
