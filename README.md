@@ -75,18 +75,41 @@ Flat file structure only — directories simulated for compatibility (, not work
 
    Files will appear as flat /tokens_xxx.txt entries inside SPIFFS.
 
-📡 Roadmap (Next)
-LoRa DM command support (> dm node message)
 
-Load/save multiple token maps dynamically
+   ## Version: 0.B1
+
+### OLED Behavior
+
+- Incoming LoRa messages cause the OLED to switch to message view
+- Message is displayed with sender name and content
+- OLED reverts to `top` after a delay set in `oled_lora_display_ms`
+
+### LoRa Commands
+
+Enter these in `>` mode:
+
+| Command | Description |
+|--------|-------------|
+| `> hello world` | Broadcast message |
+| `> /dm bob001 ping` | Direct message to `bob001` |
+
+### Shell Navigation
+
+| Mode | Command |
+|------|---------|
+| OLED Pager | `: pager` |
+| OLED Top | `: top` |
+| Launch Editor | `: edit /config.ini` |
+
+
+
+   📡 Roadmap (Next)
 
 Lynx-style text browser for internal web/BBS
 
-Configurable editor keys (via config file)
 
 CF-card support for true directory structure
 
-Background LoRa listener buffer with log view
 
 🧠 Project Philosophy
 "Everything old is new again."

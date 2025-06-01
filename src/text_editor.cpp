@@ -4,7 +4,10 @@
 #include "text_editor.h"
 
 #define MAX_LINES 64
-#define MAX_LINE_LENGTH 64
+#define MAX_LINE_LENGTH 128      // Increased line limit
+#define MAX_RENDER_WIDTH 80      // Truncate display
+
+void deleteCurrentLine();
 
 String lines[MAX_LINES];
 int numLines = 0;
@@ -28,18 +31,17 @@ void renderEditor() {
     int viewBottom = min(viewTop + 20, MAX_LINES);
 
     for (int i = viewTop; i < viewBottom; i++) {
-        if (i < numLines) {
-            if (i == cursorY)
-                Serial.printf("> %2d: %s\n", i + 1, lines[i].c_str());
-            else
-                Serial.printf("  %2d: %s\n", i + 1, lines[i].c_str());
-        } else {
-            Serial.printf("  %2d:\n", i + 1);
-        }
+        String content = (i < numLines) ? lines[i] : "";
+        content = content.substring(0, MAX_RENDER_WIDTH);  // Truncate
+
+        if (i == cursorY)
+            Serial.printf("> %2d: %s\n", i + 1, content.c_str());
+        else
+            Serial.printf("  %2d: %s\n", i + 1, content.c_str());
     }
 
     Serial.println("--------------------------------------------------");
-    Serial.print("Ctrl+S: Save | Ctrl+A: Save As | Ctrl+N: New | Ctrl+Q: Quit | Ctrl+I: Help\n");
+    Serial.print("Ctrl+S: Save | Ctrl+A: Save As | Ctrl+N: New | Ctrl+D: Del Line | Ctrl+Q: Quit | Ctrl+I: Help\n");
     Serial.printf("Cursor: %d:%d | Modified: %s\n", cursorY + 1, cursorX + 1, isDirty ? "YES" : "NO");
 }
 
@@ -49,6 +51,7 @@ void showHelp() {
     Serial.println("Ctrl+S     Save current file");
     Serial.println("Ctrl+A     Save As (prompt for filename)");
     Serial.println("Ctrl+N     New file (prompt for name)");
+    Serial.println("Ctrl+D     Delete current line");
     Serial.println("Ctrl+Q     Quit (asks to save if needed)");
     Serial.println("Arrow Keys Move cursor (left/right/up/down)");
     Serial.println("Enter      Insert new line");
@@ -143,12 +146,56 @@ void insertChar(char c) {
 
 void deleteChar() {
     String &line = lines[cursorY];
+
     if (cursorX > 0) {
+        // Standard character delete
         line.remove(cursorX - 1, 1);
         cursorX--;
         isDirty = true;
+    } else if (cursorY > 0) {
+        // Merge with previous line
+        int prevLen = lines[cursorY - 1].length();
+        if (lines[cursorY].length() + prevLen < MAX_LINE_LENGTH) {
+            lines[cursorY - 1] += lines[cursorY];
+            deleteCurrentLine(); // This updates cursorY
+            cursorY--;
+            cursorX = prevLen;
+            isDirty = true;
+        }
     }
 }
+
+void handleDeleteKey() {
+    String &line = lines[cursorY];
+    if (line.isEmpty() && numLines > 1) {
+        deleteCurrentLine();
+        renderEditor(); // Immediate feedback
+    }
+}
+
+
+void deleteCurrentLine() {
+    if (numLines <= 1) {
+        lines[0] = "";
+        cursorX = 0;
+        return;
+    }
+
+    for (int i = cursorY; i < numLines - 1; i++) {
+        lines[i] = lines[i + 1];
+    }
+
+    lines[numLines - 1] = "";
+    numLines--;
+
+    if (cursorY >= numLines) {
+        cursorY = numLines - 1;
+    }
+
+    cursorX = min(cursorX, (int)lines[cursorY].length());
+    isDirty = true;
+}
+
 
 void insertNewLine() {
     if (numLines < MAX_LINES) {
@@ -195,8 +242,7 @@ void processEditorInput() {
         if (Serial.available()) {
             char c = Serial.read();
 
-            // Arrow key escape sequence: ESC [ A/B/C/D
-            if (c == 0x1B) { // ESC
+            if (c == 0x1B) { // ESC sequence
                 while (!Serial.available());
                 char next1 = Serial.read();
                 if (next1 == '[') {
@@ -219,6 +265,9 @@ void processEditorInput() {
             else if (c == 0x0E) { // Ctrl+N
                 promptFilenameAndNew();
             }
+            else if (c == 0x04) { // Ctrl+D = Delete Line
+                deleteCurrentLine();
+            }
             else if (c == 0x11) { // Ctrl+Q
                 Serial.println("\nExit editor? Save first? (y/n)");
                 while (!Serial.available());
@@ -232,11 +281,18 @@ void processEditorInput() {
             else if (c == 0x09) { // Ctrl+I = Help
                 showHelp();
             }
-            else if (c == '\n') { // FIXED: Only handle LF, not CR
+            else if (c == '\n') {
                 insertNewLine();
             }
-            else if (c == 0x08 || c == 127) { // Backspace
-                deleteChar();
+            else if (c == 0x08) { // Backspace
+    deleteChar();
+}
+else if (c == 127) { // DEL key
+    handleDeleteKey();
+}
+            else if (c == '\t') {
+                insertChar(' ');
+                insertChar(' ');
             }
             else if (c >= 32 && c <= 126) {
                 insertChar(c);
@@ -252,3 +308,4 @@ void launchTextEditor(const String &filename) {
     renderEditor();
     processEditorInput();
 }
+

@@ -1,5 +1,42 @@
 # ULTIMESH Changelog
 
+## [0.B1] - 2025-06-02
+
+### Major
+- New OLED message handling: latched display with return-to-TOP mode
+- `/dm` LoRa command support with target filtering
+- Config-driven OLED display timing and LoRa behavior
+
+### Added
+- Sender ID included in LoRa display for both DM and broadcast
+- Shell commands:
+  - `> /dm <nodeID> <message>` — direct LoRa messaging
+  - `: pager` / `: top` — switch OLED mode
+- Extended config.ini parameters:
+  - `oled_lora_display_ms`
+  - `node_id`
+  - `tx_power`, `spread_factor`, `frequency`, etc.
+
+### Improved
+- Editor behavior:
+  - Supports Backspace and DEL (line removal)
+  - Supports long lines with visual truncation
+  - Shows modified flag
+- LoRa packet validation: non-printable packets ignored
+- Debug logging (enable/disable manually)
+
+### Fixed
+- OLED would not update after screen rework
+- Pager/Top flicker removed
+- LoRa messages previously misrouted due to improper checks
+
+### Known Issues
+- Line wrapping in OLED is static (not dynamic)
+- No ping/whois implementation yet
+- Editor is not insert-mode aware
+
+
+
 ## 🔖 v0.A5 — Shell Core Finalized, Editor Stable
 
 **New Features**

@@ -12,16 +12,19 @@
 #include <vector>
 #include <map>
 
+#define ENABLE_COMMAND_HISTORY (enableCommandHistory)
+#define ENABLE_TAB_COMPLETION  (enableTabCompletion)
+
 extern std::map<String, uint16_t> reverseMap;
 extern bool stickyTopEnabled;
 
-String inputBuffer = "";
-char activePrefix = ':';
+void sendLoRaMessage(const String& message, const String& target);
 
-#if ENABLE_COMMAND_HISTORY
+String inputBuffer = "";
+char activePrefix = ':';  // Default shell mode
+
 std::vector<String> commandHistory;
 int historyIndex = -1;
-#endif
 
 std::vector<String> tokenize(const String &input) {
     std::vector<String> tokens;
@@ -40,7 +43,46 @@ std::vector<String> tokenize(const String &input) {
     return tokens;
 }
 
-#if ENABLE_TAB_COMPLETION
+// LoRa command handler
+#include "common_config.h"  // for nodeId
+
+void handleGreaterThanCommand(const String& inputLine) {
+    String input = inputLine;
+    input.trim();
+
+    if (input == "?" || input == "help") {
+        Serial.println("LoRa Commands:");
+        Serial.println("> <message>           - Broadcast message");
+        Serial.println("> /dm <nodeID> <msg>  - Direct message");
+        return;
+    }
+
+    if (input.startsWith("/dm ")) {
+        int space = input.indexOf(' ', 4);
+        if (space > 0) {
+            String target = input.substring(4, space);
+            String msg = input.substring(space + 1);
+
+            Serial.printf("[SHELL] Sending DM to '%s': %s\n", target.c_str(), msg.c_str());
+
+            // Correctly wrap in DM format
+            String packet = "[DM:" + target + "] " + msg;
+            sendLoRaMessage(packet, "BCAST");  // DM packets still go to all nodes
+            return;
+        } else {
+            Serial.println("[!] Usage: /dm <nodeID> <message>");
+            return;
+        }
+    }
+
+    // Default: Broadcast message
+    Serial.printf("[SHELL] Sending broadcast: %s\n", input.c_str());
+    sendLoRaMessage(input, "BCAST");
+}
+
+
+
+// Tab completion helpers
 std::vector<String> getAllCommands() {
     return {
         "ls", "list", "dir", "cat", "rm", "edit", "cp", "mv", "touch", "echo",
@@ -48,13 +90,13 @@ std::vector<String> getAllCommands() {
     };
 }
 
-std::vector<String> getMatchingCompletions(const String& prefix) {
+std::vector<String> getMatchingCompletions(const String& prefix, int limit = 8) {
     std::vector<String> matches;
 
     for (String cmd : getAllCommands()) {
         if (cmd.startsWith(prefix)) {
             matches.push_back(cmd);
-            if (matches.size() >= MAX_TAB_RESULTS) break;
+            if (matches.size() >= limit) break;
         }
     }
 
@@ -64,14 +106,13 @@ std::vector<String> getMatchingCompletions(const String& prefix) {
         String name = String(file.name());
         if (name.startsWith(prefix)) {
             matches.push_back(name);
-            if (matches.size() >= MAX_TAB_RESULTS) break;
+            if (matches.size() >= limit) break;
         }
         file = root.openNextFile();
     }
 
     return matches;
 }
-#endif
 
 void handleColonCommand(const String& rawCommand) {
     String command = rawCommand;
@@ -96,7 +137,6 @@ void handleColonCommand(const String& rawCommand) {
                 Serial.printf("[✓] Wrote to %s\n", path.c_str());
             }
             Serial.println();
-            Serial.print(":");
             return;
         }
     }
@@ -116,8 +156,6 @@ void handleColonCommand(const String& rawCommand) {
 
     else if (cmd == "config") {
         printConfig();
-        Serial.println();
-        Serial.print(":");
     }
 
     else if (cmd == "cat" && tokens.size() > 1) {
@@ -145,7 +183,7 @@ void handleColonCommand(const String& rawCommand) {
         String file = tokens[1];
         if (!file.startsWith("/")) file = "/" + file;
         launchTextEditor(file);
-        activePrefix = ':';
+        activePrefix = ':'; // restore mode
     }
 
     else if (cmd == "cp" && tokens.size() > 2) {
@@ -187,10 +225,16 @@ void handleColonCommand(const String& rawCommand) {
         }
     }
 
-    else if (cmd == "top") {
-        stickyTopEnabled = !stickyTopEnabled;
-        stickyTopEnabled ? drawTopScreen() : drawPagerScreen("PAGER", "USB");
+else if (cmd == "top") {
+    if (stickyTopEnabled) {
+        currentMode = MODE_TOP;
+        returnMode = MODE_TOP;
+    } else {
+        currentMode = MODE_MESSAGE;
+        returnMode = MODE_MESSAGE;
     }
+}
+
 
     else if (cmd == "tokens") {
         for (auto &pair : reverseMap) {
@@ -200,10 +244,6 @@ void handleColonCommand(const String& rawCommand) {
 
     else if (cmd == "clear" || cmd == "cls") {
         Serial.print("\033[2J\033[H");
-    }
-
-    else if (cmd == "config") {
-        printConfig();
     }
 
     else if (cmd == "help") {
@@ -226,34 +266,40 @@ void handleColonCommand(const String& rawCommand) {
     }
 
     Serial.println();
-    Serial.print(":");
-#if ENABLE_COMMAND_HISTORY
-    if (command.length() > 0) {
+    if (enableCommandHistory && command.length() > 0) {
         if (commandHistory.empty() || command != commandHistory.back()) {
-            if (commandHistory.size() >= MAX_HISTORY_ENTRIES) {
+            if (commandHistory.size() >= maxHistoryEntries) {
                 commandHistory.erase(commandHistory.begin());
             }
             commandHistory.push_back(command);
         }
+        historyIndex = commandHistory.size();
     }
-    historyIndex = commandHistory.size();
-#endif
 }
 
 void handleInputLine(const String& line) {
-    if (line.length() == 0) return;
+    String trimmed = line;
+    trimmed.trim();
 
-    inputBuffer = line;
+    // Detect shell mode prefix (e.g., "> message")
+    if (trimmed.length() >= 2 &&
+        (trimmed[0] == ':' || trimmed[0] == '>' || trimmed[0] == '/' || trimmed[0] == '~') &&
+        trimmed[1] == ' ') {
+        activePrefix = trimmed[0];
+        inputBuffer = trimmed.substring(2);
+    } else {
+        inputBuffer = trimmed;
+    }
 
     switch (activePrefix) {
         case ':': handleColonCommand(inputBuffer); break;
-        case '>': Serial.println("[LoRa mode soon]"); break;
+        case '>': handleGreaterThanCommand(inputBuffer); break;
         case '/': Serial.println("[Web mode coming]"); break;
-        case '~': Serial.println("[BBS mode WIP]"); break;
+        case '~': Serial.println("[BBS mode coming]"); break;
     }
 
     Serial.print(activePrefix);
-    Serial.print("/\n");
+    Serial.print(" ");
 }
 
 void handleSerialShell() {
@@ -265,8 +311,40 @@ void handleSerialShell() {
             inputBuffer = "";
         }
 
-#if ENABLE_COMMAND_HISTORY
-        else if (c == 0x1B) {
+        else if ((c == 0x08 || c == 127) && inputBuffer.length()) {
+            inputBuffer.remove(inputBuffer.length() - 1);
+            Serial.print("\b \b");
+        }
+
+        else if (enableTabCompletion && c == '\t') {
+            int lastSpace = inputBuffer.lastIndexOf(' ');
+            String prefix = inputBuffer;
+            String preCursor = "";
+            if (lastSpace != -1) {
+                prefix = inputBuffer.substring(lastSpace + 1);
+                preCursor = inputBuffer.substring(0, lastSpace + 1);
+            }
+
+            auto matches = getMatchingCompletions(prefix, maxTabResults);
+            if (matches.size() == 1) {
+                inputBuffer = preCursor + matches[0];
+                Serial.print("\r:");
+                Serial.print(inputBuffer);
+            } else if (matches.size() > 1) {
+                Serial.println();
+                Serial.println("[Matches]");
+                for (String s : matches) Serial.println(" - " + s);
+                Serial.print(": ");
+                Serial.print(inputBuffer);
+            } else {
+                Serial.println();
+                Serial.println("[No match]");
+                Serial.print(": ");
+                Serial.print(inputBuffer);
+            }
+        }
+
+        else if (enableCommandHistory && c == 0x1B) {
             while (!Serial.available());
             if (Serial.read() == '[') {
                 char dir = Serial.read();
@@ -284,44 +362,8 @@ void handleSerialShell() {
                 }
             }
         }
-#endif
 
-#if ENABLE_TAB_COMPLETION
-        else if (c == '\t') {
-            int lastSpace = inputBuffer.lastIndexOf(' ');
-            String prefix = inputBuffer;
-            String preCursor = "";
-            if (lastSpace != -1) {
-                prefix = inputBuffer.substring(lastSpace + 1);
-                preCursor = inputBuffer.substring(0, lastSpace + 1);
-            }
-
-            std::vector<String> matches = getMatchingCompletions(prefix);
-            if (matches.size() == 1) {
-                inputBuffer = preCursor + matches[0];
-                Serial.print("\r:");
-                Serial.print(inputBuffer);
-            } else if (matches.size() > 1) {
-                Serial.println();
-                Serial.println("[Matches]");
-                for (String s : matches) Serial.println(" - " + s);
-                Serial.print(":");
-                Serial.print(inputBuffer);
-            } else {
-                Serial.println();
-                Serial.println("[No match]");
-                Serial.print(":");
-                Serial.print(inputBuffer);
-            }
-        }
-#endif
-
-        else if (c == 0x08 || c == 127) {
-            if (inputBuffer.length()) {
-                inputBuffer.remove(inputBuffer.length() - 1);
-                Serial.print("\b \b");
-            }
-        } else if (c != '\r') {
+        else if (c != '\r') {
             inputBuffer += c;
             Serial.print(c);
         }

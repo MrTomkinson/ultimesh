@@ -1,11 +1,7 @@
-#ifndef LORA_HANDLER_H
-#define LORA_HANDLER_H
+#pragma once
 
 #include <Arduino.h>
 
 void initLoRa();
 void handleLoRaTraffic();
-void sendMessage(const String& encodedMessage);
-void sendMessage(const String& encodedMessage, const char* recipient);
-
-#endif
+void sendLoRaMessage(const String& message, const String& to = "BCAST");

@@ -135,5 +135,6 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/oled_status.h include/serial_shell.h include/file_storage.h \
  include/token_codec.h include/lora_handler.h include/config_loader.h \
+ include/common_config.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h

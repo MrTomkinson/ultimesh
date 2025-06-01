@@ -1,50 +1,88 @@
 #include "lora_handler.h"
-#include <SPI.h>
+#include "oled_status.h"
+#include "config_loader.h"
+#include "common_config.h"
 #include <LoRa.h>
-#include "token_codec.h"
-
-#define LORA_SCK 5
-#define LORA_MISO 19
-#define LORA_MOSI 27
-#define LORA_SS 18
-#define LORA_RST 14
-#define LORA_DIO0 26
-#define LORA_BAND 915E6
 
 void initLoRa() {
-  Serial.println("[LoRa] Initializing...");
-  LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
-  if (!LoRa.begin(LORA_BAND)) {
-    Serial.println("[LoRa] LoRa init failed!");
-    while (true);
-  }
-  Serial.println("[LoRa] Initialized");
+    LoRa.setPins(18, 14, 26);
+    if (!LoRa.begin((long)frequency)) {
+        Serial.println("[LoRa] Init failed!");
+
+} else {
+    Serial.println("[LoRa] Init successful.");
+    }
+
+    LoRa.setSpreadingFactor(spreadFactor);
+    LoRa.setTxPower(txPower);
+    Serial.println("[LoRa] Init successful.");
 }
 
-void sendMessage(const String& encodedMessage, const char* recipient) {
-  // TODO: actual recipient logic
-  LoRa.beginPacket();
-  LoRa.print(encodedMessage);
-  LoRa.endPacket();
-}
+void sendLoRaMessage(const String& message, const String& target) {
+    String packet;
+    if (target == "BCAST") {
+        packet = message;
+    } else {
+        packet = "[DM:" + target + "] " + message;
+    }
 
-void sendMessage(const String& encodedMessage) {
-  sendMessage(encodedMessage, nullptr);  // broadcast for now
+    Serial.printf("[LoRa] Sending: %s\n", packet.c_str());
+
+    LoRa.beginPacket();
+    LoRa.print(packet);
+    LoRa.endPacket();
 }
 
 void handleLoRaTraffic() {
-  int packetSize = LoRa.parsePacket();
-  if (packetSize) {
-    String incoming = "";
+    int packetSize = LoRa.parsePacket();
+    if (!packetSize) return;
+
+    Serial.printf("[LoRa] Packet size: %d\n", packetSize);
+
+    String message = "";
     while (LoRa.available()) {
-      incoming += (char)LoRa.read();
+        message += (char)LoRa.read();
     }
 
-    Serial.print("[LoRa] Packet received: ");
-    Serial.println(incoming);
+    Serial.printf("[LoRa] Raw message: %s\n", message.c_str());
 
-    String decoded = decodeTokens(incoming);
-    Serial.print("[LoRa] Decoded: ");
-    Serial.println(decoded);
-  }
+    // Validate: printable characters only
+    bool printable = true;
+    for (char c : message) {
+        if ((c < 32 || c > 126) && c != '\n' && c != '\r') {
+            printable = false;
+            break;
+        }
+    }
+
+    if (!printable) {
+        Serial.println("[LoRa] Unrecognized packet (non-printable):");
+        Serial.println(message);
+        return;
+    }
+
+    // DM parsing
+    if (message.startsWith("[DM:")) {
+        int start = message.indexOf(":") + 1;
+        int end = message.indexOf("]");
+        if (start > 0 && end > start) {
+            String target = message.substring(start, end);
+            String content = message.substring(end + 2);
+
+            Serial.printf("[LoRa] DM received: target=%s | content=%s | nodeId=%s\n",
+                          target.c_str(), content.c_str(), nodeId.c_str());
+
+            if (target == nodeId) {
+                Serial.println("[LoRa] DM matches this node, displaying...");
+                showLoRaMessage("DM", content, oledDisplayDuration);
+            } else {
+                Serial.println("[LoRa] DM not for this node, ignoring.");
+            }
+            return;
+        }
+    }
+
+    // Broadcast
+    Serial.printf("[LoRa] Broadcast: %s\n", message.c_str());
+    showLoRaMessage("LoRa", message, oledDisplayDuration);
 }

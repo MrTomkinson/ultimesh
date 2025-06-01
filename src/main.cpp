@@ -5,48 +5,48 @@
 #include "token_codec.h"
 #include "lora_handler.h"
 #include "config_loader.h"
+#include "common_config.h"
 #include <FS.h>
 #include <SPIFFS.h>
 
 unsigned long lastTopRefresh = 0;
-bool stickyTopEnabled = false;
+// bool stickyTopEnabled = false;
 
 const char* deviceName = "ULTIMESH";
 const char* connectionType = "USB";
 
 void setup() {
   Serial.begin(115200);
-  delay(100);
+  delay(200);
+
+
   SPIFFS.begin(true);
-  loadConfig();  // Loads /config.ini from SPIFFS
 
-
-
+  loadConfig("/config.ini");
+updateCommonSettings();
   initOLED(deviceName, connectionType);
   initFileSystem();
   loadTokenMap("/tokens/tokens_shell.txt");
   initLoRa();
 
-  drawPagerScreen(deviceName, connectionType);
+  // drawPagerScreen(deviceName, connectionType);
   Serial.println("ULTIMESH:$ ");
+
 }
 
 void loop() {
-  handleSerialShell();
-  handleLoRaTraffic();
+    handleSerialShell();
+    handleLoRaTraffic();
+    handleOLED();  // <<< NEW
 
-  if (stickyTopEnabled && millis() - lastTopRefresh >= 2000) {
-    drawTopScreen();
-    lastTopRefresh = millis();
-  }
+    // Refresh Top Screen periodically
+    if (stickyTopEnabled && millis() - lastTopRefresh >= 5000) {
+        drawTopScreen();
+        lastTopRefresh = millis();
+    }
 
-  if (!stickyTopEnabled) {
-    drawPagerScreen(deviceName, connectionType);
-  }
-
-  if (!loadConfig()) {
-  Serial.println("[!] Config load failed.");
+    if (!stickyTopEnabled) {
+        // drawPagerScreen(deviceName, connectionType);
+    }
 }
 
-
-}
