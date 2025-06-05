@@ -1,0 +1,4 @@
+meshtastic
+pubsub
+psutil
+textwrap3

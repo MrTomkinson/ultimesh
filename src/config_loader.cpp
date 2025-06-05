@@ -2,7 +2,9 @@
 #include <FS.h>
 #include <SPIFFS.h>
 #include "common_config.h"
+#include <vector>
 std::map<String, String> runtimeConfig;
+
 
 bool loadConfig(const String& filename) {
     File file = SPIFFS.open(filename, "r");
@@ -12,10 +14,19 @@ bool loadConfig(const String& filename) {
     }
 
     runtimeConfig.clear();
+    String currentSection = "";
+
     while (file.available()) {
         String line = file.readStringUntil('\n');
         line.trim();
+
         if (line.startsWith("#") || line.length() < 3) continue;
+
+        // Handle section headers like [protocol]
+        if (line.startsWith("[") && line.endsWith("]")) {
+            currentSection = line.substring(1, line.length() - 1);
+            continue;
+        }
 
         int eq = line.indexOf('=');
         if (eq == -1) continue;
@@ -23,21 +34,38 @@ bool loadConfig(const String& filename) {
         String key = line.substring(0, eq);
         String val = line.substring(eq + 1);
 
-        int semicolon = val.indexOf(';');  // optional inline comments
+        int semicolon = val.indexOf(';');
         if (semicolon != -1) val = val.substring(0, semicolon);
 
         key.trim();
         val.trim();
 
-        if (key.length()) runtimeConfig[key] = val;
+        if (key.length()) {
+            String fullKey = currentSection.length() ? currentSection + "." + key : key;
+            runtimeConfig[fullKey] = val;
+        }
     }
 
     file.close();
     Serial.printf("[config] Loaded %d settings from %s\n", runtimeConfig.size(), filename.c_str());
-      updateCommonSettings();  // <-- sync .cpp config values from file
+    updateCommonSettings();  // <-- sync into C++ variables
     return true;
 }
 
+std::vector<String> splitString(const String& s, char delimiter) {
+    std::vector<String> tokens;
+    String token = "";
+    for (char c : s) {
+        if (c == delimiter) {
+            if (token.length()) tokens.push_back(token);
+            token = "";
+        } else {
+            token += c;
+        }
+    }
+    if (token.length()) tokens.push_back(token);
+    return tokens;
+}
 
 String getConfigValue(const String& key, const String& fallback) {
     if (runtimeConfig.count(key)) return runtimeConfig[key];
@@ -61,4 +89,11 @@ bool getConfigBool(const String& key, bool fallback) {
         return val == "1" || val == "true" || val == "yes" || val == "on";
     }
     return fallback;
+}
+
+void printConfig() {
+    Serial.println("== Runtime Config ==");
+    for (const auto& pair : runtimeConfig) {
+        Serial.printf("  %s = %s\n", pair.first.c_str(), pair.second.c_str());
+    }
 }

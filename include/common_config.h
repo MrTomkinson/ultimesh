@@ -1,42 +1,45 @@
 #pragma once
-
 #include <Arduino.h>
-#include <map>
 
-// Global config map populated from /config.ini
-extern std::map<String, String> runtimeConfig;
-
-// === Feature Toggles ===
-extern bool enableCommandHistory;
-extern bool enableTabCompletion;
-extern int  maxHistoryEntries;
-extern int  maxTabResults;
-
-// === System Identity ===
+// System Identity
 extern String nodeId;
 extern String userName;
-extern String defaultMode;
-extern String shellMode;
+extern bool locationEnabled;
+
+// LoRa
+extern float frequency;
+extern int spreadFactor;
+extern int txPower;
+
+// Message Behavior
+extern int sendDelayMs;
+extern int maxPacketSize;
+
+// Shell/UI
+extern char defaultShellMode;
+extern bool showTop;
+extern String loraNodeId;
 extern String startupCommand;
 extern String defaultTokenMap;
+extern bool editorHelp;
+extern bool enableCommandHistory;
+extern bool enableTabCompletion;
+extern int maxHistoryEntries;
+extern int maxTabResults;
 
-// === LoRa Radio Settings ===
-extern int   sendDelayMs;
-extern int   maxPacketSize;
-extern int   spreadFactor;
-extern int   txPower;
-extern float frequency;
-extern bool  locationEnabled;
-
-// === OLED / UI ===
-extern int  oledDisplayDuration;
-extern bool showHelpOnStart;
-extern bool flashOnLoRa;
-extern bool showTop;
+// OLED
+extern int oledDisplayDuration;
+extern bool oledFlashOnLora;
 extern bool stickyTopEnabled;
+// SSH / Transfer
+extern bool sshCompressionEnabled;
+extern bool sshTokenEnabled;
+extern int sshMaxChunkSize;
+extern int sshChunkDelayMs;
 
-// === Sync updated values from runtimeConfig
-void updateCommonSettings();
-
-// === Print loaded values to serial
-void printConfig();
+// Protocol
+extern int protocolMaxPacketSize;
+extern int sshPayloadLimit;
+extern int chatPayloadLimit;
+extern int protocolChunkDelay;
+extern int maxRetries;

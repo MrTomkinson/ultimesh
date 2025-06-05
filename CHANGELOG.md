@@ -1,5 +1,21 @@
 # ULTIMESH Changelog
 
+## [0.b2] - 2025-06-05
+### Added
+- Modular shell modes: `:`, `>`, `@`, `#` for shell, broadcast, DM, and SSH respectively
+- `@r` command to reply to the last DM sender
+- `serial_shell` modular refactor with individual handlers for DM/SSH/Broadcast
+
+### Fixed
+- Improved DM routing and parsing
+- Resolved command execution flow for SSH sessions
+- Prevented accidental self-DM
+
+### Known Issues
+- Occasional broadcast parsing inconsistency (may be due to packet drop)
+- Prompt occasionally disappears after SSH/DMS responses
+
+
 ## [0.B1] - 2025-06-02
 
 ### Major

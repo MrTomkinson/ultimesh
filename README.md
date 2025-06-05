@@ -76,7 +76,29 @@ Flat file structure only — directories simulated for compatibility (, not work
    Files will appear as flat /tokens_xxx.txt entries inside SPIFFS.
 
 
-   ## Version: 0.B1
+  ## Console Modes (v0.b2+)
+
+Ultimesh now supports modular console modes:
+
+- `:` **Shell** – Local commands like `ls`, `cat`, `edit`, etc.
+- `>` **Broadcast** – Send public LoRa messages to all nodes (`> hello`)
+- `@` **Direct Message (DM)** – Send private messages to specific nodes
+  - Usage: `@<node> <message>`
+  - Quick reply: `@r <message>` to reply to last DM sender
+- `#` **SSH** – Open and interact with a remote shell
+  - Usage: `#<node>` (e.g., `#fred001`)
+  - After session is open: just type commands
+  - `exit` closes the session
+
+Switch modes by typing the symbol alone:
+
+:       → Shell mode
+>       → Broadcast
+@       → Direct Message
+#       → SSH
+
+
+  ## Version: 0.B1
 
 ### OLED Behavior
 

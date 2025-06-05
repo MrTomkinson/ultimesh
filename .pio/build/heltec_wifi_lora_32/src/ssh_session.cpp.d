@@ -1,5 +1,5 @@
-.pio/build/heltec_wifi_lora_32/src/serial_shell.cpp.o: \
- src/serial_shell.cpp include/serial_shell.h \
+.pio/build/heltec_wifi_lora_32/src/ssh_session.cpp.o: src/ssh_session.cpp \
+ include/ssh_session.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp_arduino_version.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/freertos/FreeRTOS.h \
@@ -134,9 +134,8 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- include/file_storage.h include/token_codec.h include/lora_handler.h \
- include/oled_status.h include/text_editor.h include/common_config.h \
- include/config_loader.h include/ssh_session.h include/UMFrame.h \
+ include/file_storage.h include/lora_handler.h include/token_codec.h \
+ include/common_config.h include/config_loader.h include/UMFrame.h \
  .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
