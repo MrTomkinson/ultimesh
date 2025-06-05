@@ -136,5 +136,10 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/oled_status.h include/config_loader.h include/lora_handler.h \
  include/serial_shell.h include/file_storage.h include/token_codec.h \
+ include/json_loader.h \
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.h \
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.hpp \
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson/Configuration.hpp \
+ include/command_dispatcher.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h

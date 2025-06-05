@@ -52,3 +52,21 @@ String readFile(const char* path) {
     file.close();
     return content;
 }
+
+// 🔧 This is what was missing (needed by `cmd_cp`)
+bool writeFile(const char* path, const String& content) {
+    String fixedPath = String(path);
+    if (!fixedPath.startsWith("/")) {
+        fixedPath = "/" + fixedPath;
+    }
+
+    File file = SPIFFS.open(fixedPath, "w");
+    if (!file) {
+        Serial.printf("[Error] Cannot write to file: %s\n", fixedPath.c_str());
+        return false;
+    }
+
+    file.print(content);
+    file.close();
+    return true;
+}

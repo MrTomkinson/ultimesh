@@ -1,9 +1,9 @@
 #include "token_codec.h"
 #include <FS.h>
 #include <SPIFFS.h>
-
+#include "reverse_token_map.h"  // ✅ Import it from its proper source
 std::map<uint16_t, String> tokenMap;
-std::map<String, uint16_t> reverseMap;
+// std::map<String, uint16_t> reverseMap;
 
 bool loadTokenMap(const char* path) {
     tokenMap.clear();

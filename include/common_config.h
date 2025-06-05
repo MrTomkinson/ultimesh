@@ -6,6 +6,7 @@ extern String nodeId;
 extern String userName;
 extern bool locationEnabled;
 
+extern const char* firmwareVersion;
 // LoRa
 extern float frequency;
 extern int spreadFactor;

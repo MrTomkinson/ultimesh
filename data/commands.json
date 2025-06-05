@@ -1,0 +1,144 @@
+{
+  "commands": [
+  {
+    "name": "ls",
+    "aliases": ["list", "dir"],
+    "desc": "List files in the filesystem",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_ls"
+  },
+  {
+    "name": "ls -l",
+    "aliases": ["list -l", "dir /w"],
+    "desc": "List files with detailed info",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_ls_detailed"
+  },
+  {
+    "name": "cat",
+    "aliases": ["type", "view"],
+    "desc": "View contents of a file",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_cat"
+  },
+  {
+    "name": "rm",
+    "aliases": ["del", "erase"],
+    "desc": "Delete a file",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_rm"
+  },
+  {
+    "name": "edit",
+    "aliases": ["nano", "vi"],
+    "desc": "Edit a file",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_edit"
+  },
+  {
+    "name": "touch",
+    "aliases": [],
+    "desc": "Create an empty file",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_touch"
+  },
+  {
+    "name": "mv",
+    "aliases": ["rename"],
+    "desc": "Rename a file",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_mv"
+  },
+  {
+    "name": "cp",
+    "aliases": ["copy"],
+    "desc": "Copy a file",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_cp"
+  },
+  {
+    "name": "echo",
+    "aliases": [],
+    "desc": "Print text to console",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_echo"
+  },
+  {
+    "name": "clear",
+    "aliases": ["cls"],
+    "desc": "Clear screen",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_clear"
+  },
+  {
+    "name": "help",
+    "aliases": ["?"],
+    "desc": "Show help",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_help"
+  },
+  {
+    "name": "config",
+    "aliases": [],
+    "desc": "Show loaded config settings",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_config"
+  },
+  {
+    "name": "reload",
+    "aliases": ["refresh"],
+    "desc": "Reload config.ini from SPIFFS",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_reload"
+  },
+  {
+    "name": "tokens",
+    "aliases": ["codes"],
+    "desc": "List known tokens",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_tokens"
+  },
+  {
+    "name": "top",
+    "aliases": [],
+    "desc": "Enter node monitor view",
+    "modes": ["shell"],
+    "exec": "cmd_top"
+  },
+  {
+    "name": "exit",
+    "aliases": ["logout", "quit"],
+    "desc": "Close SSH or return from session",
+    "modes": ["ssh"],
+    "exec": "cmd_exit"
+  },
+  {
+    "name": "reboot",
+    "aliases": ["restart"],
+    "desc": "Restart the node",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_reboot"
+  },
+  {
+    "name": "ping",
+    "aliases": [],
+    "desc": "Send ping to another node",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_ping"
+  },
+  {
+    "name": "version",
+    "aliases": ["ver"],
+    "desc": "Show firmware version",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_version"
+  },
+  {
+    "name": "whoami",
+    "aliases": [],
+    "desc": "Show current node ID",
+    "modes": ["shell", "ssh"],
+    "exec": "cmd_whoami"
+  }
+]
+}

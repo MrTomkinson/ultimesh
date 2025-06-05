@@ -137,8 +137,12 @@
  include/file_storage.h include/token_codec.h include/lora_handler.h \
  include/oled_status.h include/text_editor.h include/common_config.h \
  include/config_loader.h include/ssh_session.h include/UMFrame.h \
+ include/command_dispatcher.h \
  .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.h \
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.hpp \
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson/Configuration.hpp

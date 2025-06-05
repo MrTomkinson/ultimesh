@@ -1,6 +1,7 @@
 #include "common_config.h"
 #include "config_loader.h"
-
+#include <map>
+const char* firmwareVersion = "0.1.0";
 // --- System Identity ---
 String nodeId = "NODE001";
 String userName = "Tom";

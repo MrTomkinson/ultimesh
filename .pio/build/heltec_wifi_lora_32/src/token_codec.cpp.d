@@ -135,4 +135,5 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h
+ /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
+ include/reverse_token_map.h

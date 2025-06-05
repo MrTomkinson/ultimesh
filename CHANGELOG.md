@@ -1,5 +1,25 @@
 # ULTIMESH Changelog
 
+## [v0.5.0] - 2025-06-04
+### Added
+- ✅ JSON-based command loading via `/commands.json`
+- ✅ Tab completion for both commands and file paths
+- ✅ Command history (Up/Down arrows) in shell mode
+- ✅ SSH mode now fully supports dynamic command execution
+- ✅ LoRa DM support with reply tracking (`@r`)
+
+### Changed
+- 🔁 `serial_shell.cpp` was fully cleaned up and modernized
+- 🔧 Replaced all hardcoded commands with dynamic dispatcher
+
+### Fixed
+- 🛠 Stack overflow on large JSON loads (handled with increased stack and scoped doc lifetime)
+- 🐞 Multiple definition/linker errors with `firmwareVersion`, `reverseMap`, and `lastDMFrom`
+
+### Notes
+- `commands.json` must be valid and small enough to parse in RAM
+- Commands now show up in `: help` dynamically
+
 ## [0.b2] - 2025-06-05
 ### Added
 - Modular shell modes: `:`, `>`, `@`, `#` for shell, broadcast, DM, and SSH respectively
