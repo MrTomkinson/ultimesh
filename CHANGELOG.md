@@ -1,20 +1,46 @@
 # ULTIMESH Changelog
 
-## [v0.5.0] - 2025-06-04
+## [v0.5.1] - 2025-06-07
+### Fixed
+-  Fixed SSH command execution being handled locally instead of sent to remote node
+-  Cleaned and trimmed `[SSH:NODEID]` prefix from incoming commands
+-  Improved routing check to ignore self-targeted frames (no echo loop)
+-  Prevented local shell from executing remote SSH payloads directly
+
 ### Added
-- ✅ JSON-based command loading via `/commands.json`
-- ✅ Tab completion for both commands and file paths
-- ✅ Command history (Up/Down arrows) in shell mode
-- ✅ SSH mode now fully supports dynamic command execution
-- ✅ LoRa DM support with reply tracking (`@r`)
+-  `sendSSHResponse()` for LoRa-based chunked replies
+-  `executeCommandByJson(cmd, mode, Print*)` now supports redirected output
+-  Print output from remote commands now cleanly sent as RESP messages
+-  Refactored all `cmd_*` handlers to support `Print* out` for better redirection
+-  `printConfig(Print*)` now added for runtime config over SSH
 
 ### Changed
-- 🔁 `serial_shell.cpp` was fully cleaned up and modernized
-- 🔧 Replaced all hardcoded commands with dynamic dispatcher
+-  Updated `serial_shell.cpp` to send commands as UMFrame over LoRa
+-  Reduced redundant debug spam during SSH message handling (some remains for verbose mode)
+
+### Known Issues / Planned
+-  Large responses are not reliably split into multi-chunk frames yet
+-  Compression not yet implemented
+-  `edit` command is still local-only; future will require remote fetch/edit/push
+-  `top` still runs on OLED only, not SSH-friendly yet
+
+---
+
+## [v0.5.0] - 2025-06-04
+### Added
+-  JSON-based command loading via `/commands.json`
+-  Tab completion for both commands and file paths
+-  Command history (Up/Down arrows) in shell mode
+-  SSH mode now fully supports dynamic command execution
+-  LoRa DM support with reply tracking (`@r`)
+
+### Changed
+-  `serial_shell.cpp` was fully cleaned up and modernized
+-  Replaced all hardcoded commands with dynamic dispatcher
 
 ### Fixed
-- 🛠 Stack overflow on large JSON loads (handled with increased stack and scoped doc lifetime)
-- 🐞 Multiple definition/linker errors with `firmwareVersion`, `reverseMap`, and `lastDMFrom`
+-  Stack overflow on large JSON loads (handled with increased stack and scoped doc lifetime)
+-  Multiple definition/linker errors with `firmwareVersion`, `reverseMap`, and `lastDMFrom`
 
 ### Notes
 - `commands.json` must be valid and small enough to parse in RAM

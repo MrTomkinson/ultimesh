@@ -6,7 +6,7 @@
 extern std::map<String, String> runtimeConfig;
 
 void updateCommonSettings();  // in config_loader.h
-void printConfig();           // in config_loader.h
+void printConfig(Print* out = &Serial);
 
 
 bool loadConfig(const String& filename = "/config.ini");

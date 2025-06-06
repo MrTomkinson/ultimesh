@@ -110,13 +110,50 @@ void handleInputLine(const String& line) {
         inputBuffer = trimmed;
     }
 
-    switch (activePrefix) {
-        case ':': executeCommandByJson(inputBuffer, "shell"); break;
-        case '>': handleBroadcastCommand(inputBuffer); break;
-        case '@': handleDirectMessageCommand(inputBuffer); break;
-        case '#': executeCommandByJson(inputBuffer, "ssh"); break;
-        default: Serial.println("[?] Unknown input prefix."); break;
+switch (activePrefix) {
+    case ':': executeCommandByJson(inputBuffer, "shell"); break;
+    case '>': handleBroadcastCommand(inputBuffer); break;
+    case '@': handleDirectMessageCommand(inputBuffer); break;
+
+    case '#': {
+        if (activeSSHNode.length() == 0) {
+            String cmd = inputBuffer;
+            cmd.trim();
+            if (cmd.length() > 0) {
+                activeSSHNode = cmd;
+                Serial.printf("[SSH] Session opened with %s\n", activeSSHNode.c_str());
+            } else {
+                Serial.println("[SSH] No session. Use: #<node>");
+            }
+        } else {
+            if (inputBuffer == "exit") {
+                Serial.printf("[SSH] Session closed with %s\n", activeSSHNode.c_str());
+                activeSSHNode = "";
+                activePrefix = '>';
+            } else {
+                UMFrame frame;
+                frame.type = UMFrame::SHELL;
+                frame.from = nodeId;
+                frame.to = activeSSHNode;
+                frame.chunkNumber = 1;
+                frame.totalChunks = 1;
+                frame.filename = "cmd";
+                frame.payload = "[SSH:" + nodeId + "] " + inputBuffer;
+
+                String encoded = frame.encode();
+                //Serial.printf("[SSH SEND] to=%s | payload=%s\n", activeSSHNode.c_str(), frame.payload.c_str());
+                LoRa.beginPacket();
+                LoRa.print(encoded);
+                LoRa.endPacket();
+            }
+        }
+        break;
     }
+
+
+    default: Serial.println("[?] Unknown input prefix."); break;
+}
+
 
     if (activePrefix == '#' && activeSSHNode.length()) {
         Serial.printf("# [%s] ", activeSSHNode.c_str());
@@ -280,4 +317,29 @@ void handleDirectMessageCommand(const String& input) {
     LoRa.endPacket();
 
     Serial.printf("[DM] Sent to %s: %s\n", target.c_str(), message.c_str());
+}
+
+void handleRemoteSSHCommand(const String& input) {
+    if (input == "exit") {
+        Serial.printf("[SSH] Session closed with %s\n", activeSSHNode.c_str());
+        activeSSHNode = "";
+        activePrefix = '>';
+        return;
+    }
+
+    UMFrame frame;
+    frame.type = UMFrame::SHELL;
+    frame.from = nodeId;
+    frame.to = activeSSHNode;
+    frame.chunkNumber = 1;
+    frame.totalChunks = 1;
+    frame.filename = "cmd";
+    frame.payload = input;
+Serial.printf("[SSH] Preparing command: '%s'\n", input.c_str());
+Serial.printf("[SSH] Sending from %s to %s\n", nodeId.c_str(), activeSSHNode.c_str());
+Serial.printf("[SSH] Payload: %s\n", input.c_str());
+    String encoded = frame.encode();
+    LoRa.beginPacket();
+    LoRa.print(encoded);
+    LoRa.endPacket();
 }

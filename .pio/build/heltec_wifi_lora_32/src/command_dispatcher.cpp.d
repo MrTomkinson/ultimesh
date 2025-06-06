@@ -134,6 +134,7 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  include/command_handlers.h include/json_loader.h \
  .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.h \
  .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.hpp \

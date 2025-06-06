@@ -136,6 +136,8 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/file_storage.h include/lora_handler.h include/token_codec.h \
  include/common_config.h include/config_loader.h include/UMFrame.h \
+ include/command_dispatcher.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \

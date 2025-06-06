@@ -91,9 +91,9 @@ bool getConfigBool(const String& key, bool fallback) {
     return fallback;
 }
 
-void printConfig() {
-    Serial.println("== Runtime Config ==");
+void printConfig(Print* out){
+    out->println("== Runtime Config ==");
     for (const auto& pair : runtimeConfig) {
-        Serial.printf("  %s = %s\n", pair.first.c_str(), pair.second.c_str());
+        out->printf("  %s = %s\n", pair.first.c_str(), pair.second.c_str());
     }
 }

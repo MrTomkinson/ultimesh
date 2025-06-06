@@ -65,6 +65,7 @@ UMFrame::FrameType UMFrame::parseType(char c) {
         case 'M': return DIRECT_MSG;
         case 'S': return SSH;
         case 'H': return SHELL;
+        case 'R': return RESP;
         default:  return DATA;
     }
 }
@@ -79,6 +80,7 @@ char UMFrame::typeToChar(FrameType type) {
         case DIRECT_MSG:  return 'M';
         case SSH:         return 'S';
         case SHELL:       return 'H';
+        case RESP: return 'R';
         default:          return 'D';
     }
 }

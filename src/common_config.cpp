@@ -19,7 +19,7 @@ int maxPacketSize = 192;
 // --- Shell/UI ---
 char defaultShellMode = ':'; // or config string parsed
 bool showTop = true;
-String loraNodeId = "ULTI-01";
+//String loraNodeId = "ULTI-01";
 String startupCommand = "top";
 String defaultTokenMap = "/tokens_shell.txt";
 bool editorHelp = true;
@@ -41,7 +41,7 @@ int sshChunkDelayMs = 500;
 // --- Protocol ---
 int protocolMaxPacketSize = 220;
 int sshPayloadLimit = 180;
-int chatPayloadLimit = 200;
+//int chatPayloadLimit = 200;
 int protocolChunkDelay = 500;
 int maxRetries = 3;
 
@@ -59,7 +59,7 @@ void updateCommonSettings() {
 
     defaultShellMode = getConfigValue("shell_mode", ":")[0];
     showTop = getConfigBool("show_top", showTop);
-    loraNodeId = getConfigValue("lora_node_id", loraNodeId);
+    //loraNodeId = getConfigValue("lora_node_id", loraNodeId);
     startupCommand = getConfigValue("startup_command", startupCommand);
     defaultTokenMap = getConfigValue("default_token_map", defaultTokenMap);
     editorHelp = getConfigBool("editor_help", editorHelp);
@@ -78,7 +78,7 @@ void updateCommonSettings() {
 
     protocolMaxPacketSize = getConfigInt("max_packet_size", protocolMaxPacketSize);
     sshPayloadLimit = getConfigInt("ssh_payload_limit", sshPayloadLimit);
-    chatPayloadLimit = getConfigInt("chat_payload_limit", chatPayloadLimit);
+    //chatPayloadLimit = getConfigInt("chat_payload_limit", chatPayloadLimit);
     protocolChunkDelay = getConfigInt("chunk_delay_ms", protocolChunkDelay);
     maxRetries = getConfigInt("max_retries", maxRetries);
 }

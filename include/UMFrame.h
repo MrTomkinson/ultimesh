@@ -1,8 +1,7 @@
 #pragma once
 #include <Arduino.h>
 
-class UMFrame {
-public:
+struct UMFrame {
     enum FrameType {
         DATA,
         ACK,
@@ -11,21 +10,20 @@ public:
         BROADCAST,
         DIRECT_MSG,
         SSH,
-        SHELL
+        SHELL,
+        RESP
     };
 
     FrameType type;
     String from;
     String to;
-    uint16_t chunkNumber;
-    uint16_t totalChunks;
+    uint8_t chunkNumber;
+    uint8_t totalChunks;
     String filename;
     String payload;
 
-    static UMFrame parse(const String& raw);
     String encode() const;
-
-private:
+    static UMFrame parse(const String& raw);
     static FrameType parseType(char c);
     static char typeToChar(FrameType type);
 };

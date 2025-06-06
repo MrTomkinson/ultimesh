@@ -141,5 +141,6 @@
  .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.hpp \
  .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson/Configuration.hpp \
  include/command_dispatcher.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h

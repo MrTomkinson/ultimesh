@@ -2,6 +2,7 @@
 #define SSH_SESSION_H
 
 #include <Arduino.h>
+extern String lastDMFrom;
 
 // Handles an SSH command from a remote node (LoRa-wrapped)
 void handleRemoteSSHCommand(const String& fromNode, const String& rawCommand);

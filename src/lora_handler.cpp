@@ -6,6 +6,7 @@
 #include "ssh_session.h"
 #include <LoRa.h>
 #include "serial_shell.h"
+#include "command_dispatcher.h"
 void initLoRa() {
     LoRa.setPins(18, 14, 26);
     if (!LoRa.begin((long)frequency)) {
@@ -24,67 +25,96 @@ void handleLoRaTraffic() {
 
     String raw = "";
     while (LoRa.available()) raw += (char)LoRa.read();
+    //Serial.printf("[LoRa RAW PACKET] \"%s\"\n", raw.c_str());
+
     raw.trim();
 
+       if (raw.length() == 0) {
+        Serial.println("[LoRa] ⚠ Empty packet received. Ignored.");
+        return;
+       }
+
     UMFrame frame = UMFrame::parse(raw);
-    Serial.printf("[Parsed] From %s → To %s | Type=%d | File=%s\n",
-                  frame.from.c_str(), frame.to.c_str(), frame.type, frame.filename.c_str());
+    //Serial.printf("[UMFrame] type=%d from=%s to=%s file=%s chunk=%d/%d\n",
+              frame.type,
+              frame.from.c_str(), frame.to.c_str(), frame.filename.c_str(),
+              frame.chunkNumber, frame.totalChunks;
+// Serial.printf("[UMFrame] payload: %s\n", frame.payload.c_str());
 
-    // 🔍 Ensure only intended recipients process the frame
-    String toLower = frame.to;
-    String selfLower = nodeId;
-    toLower.toLowerCase();
-    selfLower.toLowerCase();
+//Serial.printf("[Parsed] From %s → To %s | Type=%c (%d) | File=%s\n",
+              frame.from.c_str(), frame.to.c_str(),
+              UMFrame::typeToChar((UMFrame::FrameType)frame.type),
+              frame.type,
+              frame.filename.c_str();
+    // Ignore if not for us or a broadcast
+   String fromLower = frame.from; fromLower.toLowerCase();
+String toLower = frame.to; toLower.toLowerCase();
+String selfLower = nodeId; selfLower.toLowerCase();
 
-    if (toLower != "all" && toLower != selfLower) return;
+// 💣 Prevent self-processing
+if (fromLower == selfLower) {
+    Serial.println("[LoRa] Ignoring self-sent frame.");
+    return;
+}
 
-    if (frame.totalChunks > 1) {
-        Serial.printf("[LoRa] Chunk %d/%d from %s\n", frame.chunkNumber, frame.totalChunks, frame.from.c_str());
-    }
+
+//Serial.printf("[LoRa] Check routing: to=%s | self=%s\n", toLower.c_str(), selfLower.c_str());
+
+// 💡 Continue only if message is addressed to this node or ALL
+if (toLower != "all" && toLower != selfLower) return;
 
     switch (frame.type) {
-        case UMFrame::DIRECT_MSG:
-            showLoRaMessage("DM", frame.payload, oledDisplayDuration);
-            Serial.printf("[DM] %s\n", frame.payload.c_str());
-                lastDMFrom = frame.from;  // <- Track the last DM sender
-            break;
-
         case UMFrame::BROADCAST:
-            showLoRaMessage("LoRa", frame.payload, oledDisplayDuration);
             Serial.printf("[BROADCAST] %s\n", frame.payload.c_str());
             break;
 
-        case UMFrame::SSH:
-            if (frame.filename == "cmd") {
-                handleRemoteSSHCommand(frame.from, frame.payload);
-            } else {
-                Serial.println(frame.payload);  // Only show responses
-            }
+        case UMFrame::DIRECT_MSG:
+            Serial.printf("[DM] %s\n", frame.payload.c_str());
+            lastDMFrom = frame.from;
             break;
 
-        case UMFrame::SHELL:
-        case UMFrame::CONTROL:
-            if (frame.payload.startsWith("[SSH:")) {
-                int idx = frame.payload.indexOf(']');
-                if (idx != -1) {
-                    String from = frame.payload.substring(5, idx);
-                    String cmd = frame.payload.substring(idx + 2);
-                    handleRemoteSSHCommand(from, cmd);
-                }
-            } else {
-                handleRemoteSSHCommand(frame.from, frame.payload);
-            }
-            break;
+case UMFrame::SHELL: {
+    if (frame.to != nodeId) {
+        Serial.printf("[LoRa] Ignoring frame not addressed to this node. To: %s | Me: %s\n", frame.to.c_str(), nodeId.c_str());
+        break;
+    }
 
-        default:
-            Serial.printf("[LoRa] Unknown type: %d\n", frame.type);
-            break;
+    String command = frame.payload;
+
+    Serial.printf("[SSH] Received command from %s: %s\n", frame.from.c_str(), command.c_str());
+
+    // ✅ Correct handler call — this includes [SSH:..] cleanup
+    handleRemoteSSHCommand(frame.from, frame.payload);
+
+    break;
+}
+
+
+      case UMFrame::RESP: {
+         // Serial.printf("[LoRa] Incoming frame of type RESP from %s\n", frame.from.c_str());
+       //   Serial.printf("[LoRa] RESP filename: %s\n", frame.filename.c_str());
+      //   Serial.printf("[LoRa] RESP payload: %s\n", frame.payload.c_str());
+
+          if (frame.filename == "resp") {
+             Serial.printf("[RESP from %s] %s\n", frame.from.c_str(), frame.payload.c_str());
+          }
+          break;
+      }
+
+      default:
+          Serial.printf("[LoRa] ⚠ Unknown frame type: %c\n", UMFrame::typeToChar((UMFrame::FrameType)frame.type));
+          break;
+
     }
 }
 
 
-
 void sendLoRaMessage(const String& message, const String& target) {
+    if (message.length() == 0) {
+        Serial.println("[LoRa] ⚠ Skipped empty message.");
+        return;
+    }
+
     UMFrame frame;
     frame.type = (target.equalsIgnoreCase("BCAST") || target.equalsIgnoreCase("ALL"))
                     ? UMFrame::BROADCAST
@@ -98,9 +128,15 @@ void sendLoRaMessage(const String& message, const String& target) {
     frame.payload = message;
 
     String encoded = frame.encode();
+    if (encoded.length() == 0) {
+        Serial.println("[LoRa] ⚠ Encoded message was empty. Aborting send.");
+        return;
+    }
+
     LoRa.beginPacket();
     LoRa.print(encoded);
     LoRa.endPacket();
 
-    Serial.printf("[LoRa] Sent to %s: %s\n", frame.to.c_str(), frame.payload.c_str());
+   // Serial.printf("[LoRa] Sent to %s: %s\n", frame.to.c_str(), frame.payload.c_str());
 }
+

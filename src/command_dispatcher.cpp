@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-typedef void (*CommandHandler)(const String&);
+typedef void (*CommandHandler)(const String&, Print*);
 std::map<String, CommandHandler> handlerMap;
 
 void initCommandDispatcher() {
@@ -31,15 +31,14 @@ void initCommandDispatcher() {
     handlerMap["cmd_whoami"]    = cmd_whoami;
 }
 
-bool executeCommandByJson(const String& rawCmd, const String& mode) {
-    String input = rawCmd;
-    input.trim();
+bool executeCommandByJson(const String& input, const String& mode, Print* out) {
+    String rawCmd = input;
+    rawCmd.trim();
+    if (rawCmd.length() == 0) return false;
 
-    if (input.length() == 0) return false;
-
-    int space = input.indexOf(' ');
-    String cmd = (space > 0) ? input.substring(0, space) : input;
-    String args = (space > 0) ? input.substring(space + 1) : "";
+    int space = rawCmd.indexOf(' ');
+    String cmd = (space > 0) ? rawCmd.substring(0, space) : rawCmd;
+    String args = (space > 0) ? rawCmd.substring(space + 1) : "";
 
     for (const auto& entry : loadedCommandList) {
         String name = entry["name"];
@@ -57,7 +56,7 @@ bool executeCommandByJson(const String& rawCmd, const String& mode) {
         });
 
         if (nameMatch || aliasMatch) {
-            // Check mode
+            // ✅ Check allowed modes
             if (entry.containsKey("modes")) {
                 JsonArray modes = entry["modes"].as<JsonArray>();
                 bool validMode = false;
@@ -68,23 +67,23 @@ bool executeCommandByJson(const String& rawCmd, const String& mode) {
                     }
                 }
                 if (!validMode) {
-                    Serial.println("[!] Command not allowed in this mode");
+                    out->println("[!] Command not allowed in this mode");
                     return false;
                 }
             }
 
-            // Find handler
+            // ✅ Find handler
             String exec = entry["exec"];
             if (handlerMap.count(exec)) {
-                handlerMap[exec](args);
+                handlerMap[exec](args, out);
                 return true;
             } else {
-                Serial.printf("[!] Handler for '%s' not implemented\n", exec.c_str());
+                out->printf("[!] Handler for '%s' not implemented\n", exec.c_str());
                 return false;
             }
         }
     }
 
-    Serial.printf("[?] Unknown command: %s\n", cmd.c_str());
+    out->printf("[?] Unknown command: %s\n", cmd.c_str());
     return false;
 }

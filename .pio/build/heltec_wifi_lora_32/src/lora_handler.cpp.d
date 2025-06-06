@@ -139,4 +139,5 @@
  .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
- include/serial_shell.h
+ include/serial_shell.h include/command_dispatcher.h \
+ /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h
