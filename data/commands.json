@@ -1,6 +1,16 @@
 {
   "commands": [
   {
+  "name": "debug_resp",
+  "exec": "debug_resp",
+  "modes": ["shell", "ssh"]
+},
+{
+  "name": "debug_ssh",
+  "exec": "debug_ssh",
+  "modes": ["shell", "ssh"]
+},
+  {
     "name": "ls",
     "aliases": ["list", "dir"],
     "desc": "List files in the filesystem",

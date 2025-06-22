@@ -1,5 +1,5 @@
 .pio/build/heltec_wifi_lora_32/src/ssh_session.cpp.o: src/ssh_session.cpp \
- include/ssh_session.h \
+ include/config_loader.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp_arduino_version.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/freertos/FreeRTOS.h \
@@ -134,12 +134,6 @@
  /home/main/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- include/file_storage.h include/lora_handler.h include/token_codec.h \
- include/common_config.h include/config_loader.h include/UMFrame.h \
+ include/UMFrame.h include/chunked_transfer.h include/frame_utils.h \
  include/command_dispatcher.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
- .pio/libdeps/heltec_wifi_lora_32/LoRa/src/LoRa.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
- /home/main/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h
+ /home/main/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h

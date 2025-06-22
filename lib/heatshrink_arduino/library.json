@@ -1,0 +1,11 @@
+{
+  "name": "heatshrink_arduino",
+  "version": "1.0.0",
+  "build": {
+    "srcFilter": [
+      "+<*>",
+      "-<*.md>",
+      "-<test>"
+    ]
+  }
+}

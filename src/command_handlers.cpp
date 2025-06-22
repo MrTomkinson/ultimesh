@@ -18,13 +18,40 @@ extern bool stickyTopEnabled;
 #define NOT_IMPLEMENTED(name) out->printf("[!] %s not implemented yet\n", name)
 
 void cmd_ls(const String& args, Print* out) {
+    if (!SPIFFS.begin(true)) {
+        out->println("[error] SPIFFS mount failed.");
+        return;
+    }
+
     File root = SPIFFS.open("/");
+    if (!root || !root.isDirectory()) {
+        out->println("[error] Root directory inaccessible.");
+        return;
+    }
+
     File file = root.openNextFile();
+    if (!file) {
+        out->println("[info] No files found.");
+        return;
+    }
+
     while (file) {
-        out->printf("       %-24s %6d bytes\n", file.name(), file.size());
+        out->print(file.name());
+        out->print("  ");
+        out->print(file.size());
+        out->println(" bytes");
         file = root.openNextFile();
     }
 }
+
+//void cmd_ls(const String& args, Print* out) {
+//    File root = SPIFFS.open("/");
+//    File file = root.openNextFile();
+//    while (file) {
+//        out->printf("       %-24s %6d bytes\n", file.name(), file.size());
+//        file = root.openNextFile();
+//    }
+//}
 
 void cmd_ls_detailed(const String& args, Print* out) {
     // Placeholder - same as ls for now

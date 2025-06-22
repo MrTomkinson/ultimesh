@@ -52,20 +52,6 @@ bool loadConfig(const String& filename) {
     return true;
 }
 
-std::vector<String> splitString(const String& s, char delimiter) {
-    std::vector<String> tokens;
-    String token = "";
-    for (char c : s) {
-        if (c == delimiter) {
-            if (token.length()) tokens.push_back(token);
-            token = "";
-        } else {
-            token += c;
-        }
-    }
-    if (token.length()) tokens.push_back(token);
-    return tokens;
-}
 
 String getConfigValue(const String& key, const String& fallback) {
     if (runtimeConfig.count(key)) return runtimeConfig[key];

@@ -138,4 +138,5 @@
  include/command_handlers.h include/json_loader.h \
  .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.h \
  .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson.hpp \
- .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson/Configuration.hpp
+ .pio/libdeps/heltec_wifi_lora_32/ArduinoJson/src/ArduinoJson/Configuration.hpp \
+ include/debug_commands.h

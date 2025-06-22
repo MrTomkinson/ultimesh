@@ -1,102 +1,62 @@
-#include "ssh_session.h"
-#include "file_storage.h"
-#include "lora_handler.h"
-#include "token_codec.h"
-#include "common_config.h"
-#include "config_loader.h"
+/**
+ * @file ssh_session.cpp
+ * @brief Handles incoming SSH-style remote command execution frames.
+ */
+#include "config_loader.h"  // not common_config.h
+
 #include "UMFrame.h"
+#include "chunked_transfer.h"
+#include "frame_utils.h"
 #include "command_dispatcher.h"
-#include <LoRa.h>
-#include <SPIFFS.h>
 
-// 🧠 Print buffer class to capture Serial output
-class BufferCapture : public Print {
-  public:
-    String buffer;
-    size_t write(uint8_t c) override {
-        buffer += (char)c;
-        return 1;
-    }
-};
+#include <Arduino.h>
 
-class StringPrinter : public Print {
+// Helper: Implements Print to collect output into a String
+class PrintBuffer : public Print {
 public:
-    StringPrinter(String& buffer) : _buffer(buffer) {}
+    String buf;
     size_t write(uint8_t c) override {
-        _buffer += (char)c;
+        buf += (char)c;
         return 1;
     }
-    size_t write(const uint8_t* buffer, size_t size) override {
-        _buffer += String((const char*)buffer).substring(0, size);
-        return size;
+    size_t write(const uint8_t* data, size_t len) override {
+        buf.concat((const char*)data, len);
+        return len;
     }
-private:
-    String& _buffer;
+    String str() const { return buf; }
 };
 
-
-void sendSSHResponse(const String& toNode, const String& responseText) {
-    size_t maxLen = 192;
-    size_t start = 0;
-
-    while (start < responseText.length()) {
-        String chunk = responseText.substring(start, start + maxLen);
-
-        UMFrame frame;
-        frame.type = UMFrame::RESP;
-        frame.from = nodeId;
-        frame.to = toNode;
-        frame.chunkNumber = 1;
-        frame.totalChunks = 1;
-        frame.filename = "resp";
-        frame.payload = chunk;
-
-        String encoded = frame.encode();
-        LoRa.beginPacket();
-        LoRa.print(encoded);
-        LoRa.endPacket();
-
-        start += maxLen;
-        delay(400);  // 🕓 Prevent packet overlap
-    }
-}
-
-void handleRemoteSSHCommand(const String& fromNode, const String& rawCommand) {
-    //Serial.printf("[RemoteSSH] Raw command from %s: %s\n", fromNode.c_str(), rawCommand.c_str());
-
-    String command = rawCommand;
-    command.trim();
-
-    // 🧼 Strip [SSH:NODEID]
-    if (command.startsWith("[SSH:")) {
-        int end = command.indexOf(']');
-        if (end > 0) {
-            command = command.substring(end + 1);
-            command.trim();
-        }
-    }
-
-    //Serial.printf("[RemoteSSH] Cleaned command: %s\n", command.c_str());
-
-    // 💥 Special-case for exit
-    if (command == "exit") {
-        sendSSHResponse(fromNode, "[SSH] Session closed.");
+void handleSSHFrame(const UMFrame &frame) {
+    String targetId = getConfigValue("node_id");
+    if (frame.to != toBytes(targetId) && frame.to != toBytes("ALL")) {
         return;
     }
 
-    // 🔁 Capture output instead of printing to Serial
-    BufferCapture capture;
-Serial.printf("[SSH] Executing remote command: %s\n", command.c_str());
-    //Serial.println("[DEBUG] About to call executeCommandByJson() with redirected output:");
-    Serial.println(command);
-
-    bool success = executeCommandByJson(command, "ssh", &capture);  // <-- You must update this function to accept Print*
-
-    if (capture.buffer.length() > 0) {
-        sendSSHResponse(fromNode, capture.buffer);
-    } else if (!success) {
-        sendSSHResponse(fromNode, "[?] Unknown command: " + command);
-    } else {
-        sendSSHResponse(fromNode, "[✓] Executed: " + command);
+    // Convert payload vector to command string
+    String command;
+    for (uint8_t b : frame.payload) {
+        command += (char)b;
     }
+    command.trim();
+
+    PrintBuffer out;
+    bool success = executeCommandByJson(command, "ssh", &out);
+    String result = out.str();
+
+    if (!success || result.length() == 0) {
+        result = "[error] Command failed or returned nothing.";
+    }
+
+    int limit = getConfigInt("ssh_payload_limit", 190);
+    if (result.length() > limit) {
+        result = result.substring(0, limit);
+    }
+
+    // Convert frame.from (vector<uint8_t>) to String for sendLargePayload
+    String fromStr;
+    for (uint8_t b : frame.from) {
+        fromStr += (char)b;
+    }
+
+    sendLargePayload(fromStr, "-", result, UMFrame::RESP);
 }
